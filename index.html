@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
+		<link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
+		<script src="js/google_style.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+        <script src="js/handlebars-v2.0.0.js"></script>
+        <!-- Handlebars templates -->
+      	<script type="text/x-handlebars-template" id="hb-info-window">
+      		<div class="info-window">
+      			<h5>{{name}}</h5>
+				{{#each directions}}
+					<div><button class="route-btn" data-name="{{name}}">{{name}}</button></div>
+				{{/each}}
+				</ul>
+			</div>
+      	</script>
+      	<script type="text/x-handlebars-template" id="hb-loading">
+      		<div class="centered">
+	      		Loading...
+			</div>
+      	</script>
+      	<script type="text/x-handlebars-template" id="hb-error">
+      		<div class="centered">
+	      		Error! {{error}}
+			</div>
+      	</script>
+      	<script type="text/x-handlebars-template" id="hb-trips">
+      		<h5>Next trips:</h5>
+      		{{#each trains}}
+      			<div>{{name}}: {{etaString}}</div>
+  			{{/each}}
+      	</script>
+      	<!-- End Handlebars templates -->
+
+		<script src="js/helpers.js"></script>
+		<script src="js/all_stops.js"></script>
+		<script src="js/map.js"></script>
+		<link rel="stylesheet" href="css/picnic.css" />
+		<link rel="stylesheet" href="css/site.css" />
+	</head>
+	<body>
+		<div id="viewport-wrapper">
+			<div id="viewport"></div>
+		</div>
+		<div id="console">
+			<div class="alert-pane ui-element">
+				<div id="alert-message">Minor delays on southbound Orange Line trains due to a disabled train at Back Bay</div>
+			</div>
+			<div class="user-location ui-element slider slider-bottom">
+				<button>My Location</button>
+			</div>
+			<div class="train-feed ui-element slider slider-bottom">
+				<a class="toggle open" data-toggle="train-updaters"></a>
+				<h4>Update Trains</h4>
+				<ul class="train-updaters" id="train-updaters">
+					<li><button class="success">Green</button></li>
+					<li><button class="warning">Orange</button></li>
+					<li><button class="error">Red</button></li>
+					<li><button>Blue</button></li>
+				</ul>
+			</div>
+		</div>
+	</body>
+</html>

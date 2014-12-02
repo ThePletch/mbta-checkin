@@ -1,0 +1,120 @@
+/* reset styles */
+
+h1, h2, h3, h4, h5, h6{
+	padding: 0;
+}
+
+ul{
+	padding: 0;
+	margin: 0;
+}
+
+li{
+	list-style-type: none;
+}
+
+body{
+	color: #fff;
+	font-family: 'Raleway', sans-serif;
+}
+
+a{
+	cursor: pointer;
+}
+
+a:hover{
+	color: inherit;
+}
+
+#viewport-wrapper{
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+}
+#viewport{
+	width: 100%;
+	height: 100%;
+}
+
+.routeList{
+	list-style-type: none;	
+}
+
+.info-window{
+	width: 100%;
+}
+
+/* UI styles */
+
+.ui-element{
+	border: 1px solid #fff;
+	background-color: rgba(0, 0, 0, 0.85);
+	padding: 5px;
+}
+
+.slider{
+	text-align: center;
+}
+
+.toggle{
+	border: 1px solid #fff;
+	background-color: #777;
+	font-size: 0.9em;
+	color: #fff;
+	padding: 0 5px;
+}
+
+.toggle:before{
+	content: "\2227";
+}
+
+.toggle.open:before{
+	content: "\2228";
+}
+
+.slider-bottom{
+	position: fixed;
+	bottom: 0;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
+	border-bottom: none;
+}
+.slider-bottom .toggle{
+	position: relative;
+	top: -9px;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+}
+
+.train-feed{
+	right: 1em;
+}
+
+.user-location{
+	right: 150px;
+}
+
+.train-updaters li button{
+	min-width: 70px;
+}
+
+.alert-pane{
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 306px;
+	min-height: 1em;
+	min-width: 5em;
+	border-bottom: none;
+	border-left: none;
+	border-top-right-radius: 10px;
+	overflow: hidden;
+}
+#alert-message{
+	color: #aaa;
+}
+#alert-message.warning{
+	color: #c33;
+}
