@@ -66,54 +66,11 @@ var helpers = {
 		return toReturn;
 	},
 	getIcon: function(icon){
-		//var hasRed = false,
-		//	hasBlue = false,
-		//	hasGreen = false,
-		//	hasOrange = false;
-		//$.each(icon.directions, function(i, dir){
-		//	$.each(dir.substops, function(i, substop){
-		//		switch(substop.line){
-		//			case 'Green Line':
-		//				hasGreen = true;
-		//				break;
-		//			case 'Orange Line':
-		//				hasOrange = true;
-		//				break;
-		//			case 'Blue Line':
-		//				hasBlue = true;
-		//				break;
-		//			case 'Red Line':
-		//			case 'Mattapan Trolley':
-		//				hasRed = true;
-		//				break;
-		//		}
-		//	})
-		//});
 		var toReturn = {
 			scaledSize: new google.maps.Size(24, 24),
 			anchor: new google.maps.Point(12, 12),
 			url: helpers.getLineIcon(icon.line)
 		};
-
-		//if (hasRed && hasGreen){
-		//	toReturn.url = helpers.iconUrls.redGreen;
-		//} else if (hasRed && hasOrange){
-		//	toReturn.url = helpers.iconUrls.redOrange;
-		//} else if (hasOrange && hasGreen){
-		//	toReturn.url = helpers.iconUrls.orangeGreen;
-		//} else if (hasGreen && hasBlue){
-		//	toReturn.url = helpers.iconUrls.blueGreen;
-		//} else if (hasRed){
-		//	toReturn.url = helpers.iconUrls.red;
-		//} else if (hasGreen){
-		//	toReturn.url = helpers.iconUrls.green;
-		//} else if (hasBlue){
-		//	toReturn.url = helpers.iconUrls.blue;
-		//} else if (hasOrange){
-		//	toReturn.url = helpers.iconUrls.orange;
-		//} else {
-		//	console.log("Failed a line");
-		//}
 
 		return toReturn;
 	},
