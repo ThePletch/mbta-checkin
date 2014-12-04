@@ -109,31 +109,15 @@ var mbta = (function(){
 			}
 
 			function refreshTrainMarkers(trains){
-				var toRemove = [];
-				//update trains that have moved and mark trains that were
-				//not found for deletion
-				for (var id in self.trainLocations){
-					if (trains[id]){
-						var newLocation = new google.maps.LatLng(trains[id].lat, trains[id].lng);
-						self.trainLocations[id].setPosition(newLocation);
-						var newIcon = self.trainLocations[id].icon;
-						newIcon.rotation = trains[id].bearing;
-						self.trainLocations[id].setIcon(newIcon);
-					} else {
-						toRemove.push(id);
-					}
+				//remove all trains
+				for (train in self.trainLocations){
+					self.trainLocations[train].setMap(null);
 				}
+				self.trainLocations = {};
 
-				//add newly-started trains
+				//add new trains
 				for (var id in trains){
-					if (!self.trainLocations[id]){
-						self.trainLocations[id] = mapper.placeVehicleMarker(trains[id]);
-					}
-				}
-
-				//remove any missing trains
-				for (var i = 0; i < toRemove.length; i++){
-					self.trainLocations[toRemove[i]].setMap(null);
+					self.trainLocations[id] = mapper.placeVehicleMarker(trains[id]);
 				}
 			}
 
