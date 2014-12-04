@@ -151,32 +151,6 @@ var mbta = (function(){
 			makeApiRequest('predictionsbystop', {stop: stop}, function(result){
 				callback(result);
 			});
-
-			// for (var i = 0; i < direction.substops.length; i++){
-			// 	requestsMade++;
-			// 	(function(i){
-			// 		makeApiRequest('predictionsbystop', {stop: stop.name},
-			// 			function(result){
-			// 				$.each(result.mode[0].route, function(i, route){
-			// 					var nextTrain = route.direction[0].trip[0];
-			// 					var eta = new Date(parseInt(nextTrain.pre_dt) * 1000);
-			// 					toReturn.push(new Train(
-			// 						nextTrain.trip_headsign,
-			// 						eta,
-			// 						helpers.dateToTime(eta)));
-			// 				});
-
-			// 				requestsCompleted++;
-			// 				if (requestsCompleted === requestsMade){
-			// 					callback(toReturn);
-			// 				}
-			// 			},
-			// 			function(error){
-			// 				callback(error, true);
-			// 			}
-			// 		);
-			// 	}(i));
-			// }
 		}
 	};
 
@@ -197,21 +171,6 @@ var mapper = (function(){
 			});
 
 			self.placeStopMarkers(allStops);
-
-			//draw routes
-			//for(var route in routeLatLons){
-			//	var stopLatLons = routeLatLons[route].map(function(position){
-			//		return new google.maps.LatLng(position.lat, position.lng);
-			//	});
-//
-			//	var routeLine = new google.maps.Polyline({
-			//		path: stopLatLons,
-			//		strokeColor: helpers.getLineColor(route),
-			//		strokeWeight: 2
-			//	});
-//
-			//	routeLine.setMap(self.map);
-			//}
 		},
 		placeVehicleMarker: function(marker){
 			var gMarker = new google.maps.Marker({

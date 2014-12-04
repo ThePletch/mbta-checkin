@@ -1,24 +1,13 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<!--External libraries-->
 		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
 		<link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
 		<script src="js/google_style.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-
-        <script src="js/handlebars-v2.0.0.js"></script>
-        <!-- Handlebars templates -->
-      	<script type="text/x-handlebars-template" id="hb-info-window">
-      		<div class="info-window">
-      			<h5>{{name}}</h5>
-				{{#each directions}}
-					<div><button class="route-btn" data-name="{{name}}">{{name}}</button></div>
-				{{/each}}
-				</ul>
-			</div>
-      	</script>
-      	<!-- End Handlebars templates -->
-
+        <!--End external libraries-->
+        
 		<script src="js/helpers.js"></script>
 		<script src="js/all_stops.js"></script>
 		<script src="js/map.js"></script>
