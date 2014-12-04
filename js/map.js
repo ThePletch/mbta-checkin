@@ -7,21 +7,21 @@ var app = (function(){
 				}, function(error){
 					switch(error.code){
 						case error.PERMISSION_DENIED:
-							console.log("Let me see where you are!");
+							ui.displayAlert("Denied request to geolocate user", true);
 							break;
 						case error.POSITION_UNAVAILABLE:
-							console.log("No info");
+							ui.displayAlert("Could not detect user location", true);
 							break;
 						case error.TIMEOUT:
-							console.log("Took too long");
+							ui.displayAlert("Attempt to find user timed out", true);
 							break;
 						case error.UNKNOWN_ERROR:
-							console.log("WHAT DID YOU DO");
+							ui.displayAlert("Unknown error in geolocation", true);
 							break;
 					}
 				});
 			} else {
-				console.log("No geolocation in this browser.");
+				ui.displayAlert("Your browser does not support geolocation", true);
 			}
 		}
 	};
@@ -38,7 +38,7 @@ var mbta = (function(){
 
 		additionalParams = additionalParams || {};
 		errorCallback = errorCallback || function(thrown){
-			console.log(thrown);
+			ui.displayAlert(thrown, true);
 		};
 
 		for (var param in additionalParams){
@@ -57,68 +57,7 @@ var mbta = (function(){
 	var self = {
 		allStops: allStops,
 		trainLocations: {},
-		trainLocsUpdateIntervalObject: null,
 		initialize: function(){
-			self.getAllRoutes(function(result){
-				var allStops = {};
-				var routeLatLons = {};
-				var callsMade = 0;
-				var callsCompleted = 0;
-
-				function finalize(){
-					stopsAsArray = [];
-					for(var stop in allStops){
-						stopsAsArray.push(allStops[stop]);
-					}
-					console.log(stopsAsArray);
-
-					routeLatLonsArrayed = {};
-					for (var route in routeLatLons){
-						routeLatLonsArrayed[route] = [];
-						for (var stop in routeLatLons[route]){
-							routeLatLonsArrayed[route].push(routeLatLons[route][stop]);
-						}
-					}
-					console.log(routeLatLonsArrayed);
-				}
-
-				function buildStop(i, route){
-					callsMade++;
-					self.getStopsByRoute(route.route_id, function(result){
-						routeLatLons[route.route_name] = routeLatLons[route.route_name] || {};
-
-						$.each(result.direction, function(i, dir){
-							$.each(dir.stop, function(i, stop){
-								allStops[stop.parent_station] = allStops[stop.parent_station] ||
-									{
-										id: stop.parent_station,
-										name: stop.parent_station_name,
-										line: route.route_name,
-										lat: parseFloat(stop.stop_lat),
-										lng: parseFloat(stop.stop_lon),
-										order: parseInt(stop.stop_order)
-									};
-
-								routeLatLons[route.route_name][stop.parent_station] = 
-									routeLatLons[route.route_name][stop.parent_station] ||
-									{
-										lat: parseFloat(stop.stop_lat),
-										lng: parseFloat(stop.stop_lon),
-										order: parseInt(stop.stop_order)
-									};
-							});
-						});
-						callsCompleted++;
-
-						if (callsMade === callsCompleted){
-							finalize();
-						}
-					});
-				}
-
-				$.each(result.mode[0].route, buildStop);
-				$.each(result.mode[1].route, buildStop);
-			});
 		},
 		getAllRoutes: function(callback){
 			makeApiRequest('routes', null, callback);
@@ -132,14 +71,23 @@ var mbta = (function(){
 		getTrainsByRoute: function(routeName, callback, errorCallback){
 			makeApiRequest('vehiclesbyroute', {route: routeName}, callback, errorCallback);
 		},
-		updateTrainLocations: function(){
+		updateTrainLocations: function(routes){
+			ui.displayAlert("Fetching train locations...");
 			var trainsFound = {};
 			var callsMade = 0;
 			var callsCompleted = 0;
 
+			function completeCall(){
+				callsCompleted++;
+				if (callsMade === callsCompleted){
+					refreshTrainMarkers(trainsFound);
+					ui.displayAlert("Train locations updated.");
+				}
+			}
+
 			function findAllTrains(route){
 				callsMade++;
-				self.getTrainsByRoute(route.route_id, function(route){
+				self.getTrainsByRoute(route, function(route){
 					$.each(route.direction, function(j, dir){
 						$.each(dir.trip, function(k, trip){
 							var vehicle = trip.vehicle;
@@ -155,17 +103,9 @@ var mbta = (function(){
 							trainsFound[vehicle.vehicle_id] = train;
 						});
 					});
-					callsCompleted++;
-
-					if (callsMade === callsCompleted){
-						refreshTrainMarkers(trainsFound);
-					}
-				}, function(){
-					callsCompleted++;
-					if (callsMade === callsCompleted){
-						refreshTrainMarkers(trainsFound);
-					}
-				});
+					
+					completeCall();
+				}, completeCall);
 			}
 
 			function refreshTrainMarkers(trains){
@@ -197,16 +137,11 @@ var mbta = (function(){
 				}
 			}
 
-			self.getAllRoutes(function(results){
-				$.each(results.mode[0].route, function(i, route){
-					findAllTrains(route);
-				});
-				$.each(results.mode[1].route, function(i, route){
-					findAllTrains(route);
-				});
+			$.each(routes, function(i, route){
+				findAllTrains(route);
 			});
 		},
-		getNextTrainsToStop: function(stop, direction, callback){
+		getNextTrainsToStop: function(stop, callback){
 			var toReturn = [];
 			var requestsMade = 0;
 			var requestsCompleted = 0;
@@ -216,32 +151,6 @@ var mbta = (function(){
 			makeApiRequest('predictionsbystop', {stop: stop}, function(result){
 				callback(result);
 			});
-
-			// for (var i = 0; i < direction.substops.length; i++){
-			// 	requestsMade++;
-			// 	(function(i){
-			// 		makeApiRequest('predictionsbystop', {stop: stop.name},
-			// 			function(result){
-			// 				$.each(result.mode[0].route, function(i, route){
-			// 					var nextTrain = route.direction[0].trip[0];
-			// 					var eta = new Date(parseInt(nextTrain.pre_dt) * 1000);
-			// 					toReturn.push(new Train(
-			// 						nextTrain.trip_headsign,
-			// 						eta,
-			// 						helpers.dateToTime(eta)));
-			// 				});
-
-			// 				requestsCompleted++;
-			// 				if (requestsCompleted === requestsMade){
-			// 					callback(toReturn);
-			// 				}
-			// 			},
-			// 			function(error){
-			// 				callback(error, true);
-			// 			}
-			// 		);
-			// 	}(i));
-			// }
 		}
 	};
 
@@ -278,14 +187,42 @@ var mapper = (function(){
 				position: new google.maps.LatLng(marker.lat, marker.lng),
 				map: self.map,
 				title: marker.name,
-				icon: marker.icon || helpers.getIcon(marker),
-				stop: marker.stop
+				icon: marker.icon || helpers.getIcon(marker)
 			});
 
-			gMarker.infoWindow = new InfoWindow(self.map, marker, gMarker)
-
 			google.maps.event.addListener(gMarker, 'click', function(){
-				this.infoWindow.open();
+				mbta.getNextTrainsToStop(marker.id, function(result){
+					console.log(result);
+					var alerts = [];
+					$.each(result.mode, function(i, mode){
+						alerts.push(mode.mode_name + " info for " + marker.name);
+						$.each(mode.route, function(i, route){
+							if (mode.route.length > 1){
+								alerts.push(route.route_name + " (" + route.direction[0].trip[0].trip_headsign + "):");
+							}
+
+							$.each(route.direction, function(i, direction){
+								var directionAlert = direction.trip[0].trip_headsign + ": ";
+
+								var predictedTime = new Date(parseInt(direction.trip[0].pre_dt) * 1000);
+								var predictedTimeAway = parseInt(direction.trip[0].pre_away);
+
+								directionAlert += helpers.dateToTime(predictedTime);
+
+								//terminal stations don't have time away
+								if (predictedTimeAway){
+									directionAlert += " (" + helpers.secondsToTimeString(predictedTimeAway) + ")";
+								}
+
+								alerts.push(directionAlert);
+							});
+						});
+					});
+
+					
+
+					ui.displayAlerts(alerts);
+				});
 			});
 
 			return gMarker;
@@ -307,7 +244,23 @@ var ui = (function(){
 	var alertSwitchLengthMs = 2000;
 	var self = {
 		initialize: function(){
+			self.bindButtons();
 			self.bindToggles();
+		},
+		bindButtons: function(){
+			$("#zoom-location").click(self.zoomToUserLocation);
+			$("#update-blue").click(function(){
+				mbta.updateTrainLocations(routesByLine["Blue Line"]);
+			});
+			$("#update-green").click(function(){
+				mbta.updateTrainLocations(routesByLine["Green Line"]);
+			});
+			$("#update-orange").click(function(){
+				mbta.updateTrainLocations(routesByLine["Orange Line"]);
+			});
+			$("#update-red").click(function(){
+				mbta.updateTrainLocations(routesByLine["Red Line"]);
+			});
 		},
 		bindToggles: function(){
 			$('[data-toggle]').click(function(){
@@ -320,7 +273,6 @@ var ui = (function(){
 		displayAlert: function(alert, isWarning){
 			isWarning = isWarning || false;
 
-			console.log("Displaying " + alert);
 			$(alertMsgSelector).fadeOut(function(){
 				$(this).html(alert);
 				$(this).toggleClass('warning', isWarning);
@@ -329,9 +281,16 @@ var ui = (function(){
 		},
 		displayAlerts: function(alerts){
 			$.each(alerts, function(i, a){
-				window.setTimeout(alertSwitchLengthMs * i, function(){
+				window.setTimeout(function(){
 					self.displayAlert(a);
-				});
+				}, alertSwitchLengthMs * i);
+			});
+		},
+		zoomToUserLocation: function(){
+			app.getUserLocation(function(result){
+				console.log(result);
+				mapper.map.setCenter(new google.maps.LatLng(result.latitude, result.longitude));
+				mapper.map.setZoom(16);
 			});
 		}
 	};
