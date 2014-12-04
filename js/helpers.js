@@ -27,81 +27,93 @@ var helpers = {
 		blue: "#0000ff",
 		orange: "#ff8800"
 	},
+	getLineColor: function(lineColor){
+		switch(lineColor){
+			case 'Green Line':
+				return helpers.lineColors.green;
+			case 'Orange Line':
+				return helpers.lineColors.orange;
+			case 'Blue Line':
+				return helpers.lineColors.blue;
+			case 'Red Line':
+			case 'Mattapan Trolley':
+				return helpers.lineColors.red;
+		}
+	},
+	getLineIcon: function(lineColor){
+		switch(lineColor){
+			case 'Green Line':
+				return helpers.iconUrls.green;
+			case 'Orange Line':
+				return helpers.iconUrls.orange;
+			case 'Blue Line':
+				return helpers.iconUrls.blue;
+			case 'Red Line':
+			case 'Mattapan Trolley':
+				return helpers.iconUrls.red;
+		}
+	},
 	getLiveIcon: function(train){
 		var toReturn = {
 			path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+			fillColor: helpers.getLineColor(train.line),
 			fillOpacity: 1,
 			rotation: train.bearing,
 			scale: 4,
 			strokeWeight: 1
 		};
 
-		switch(train.line){
-			case 'Green Line':
-				toReturn.fillColor = helpers.lineColors.green;
-				break;
-			case 'Orange Line':
-				toReturn.fillColor = helpers.lineColors.orange;
-				break;
-			case 'Blue Line':
-				toReturn.fillColor = helpers.lineColors.blue;
-				break;
-			case 'Red Line':
-			case 'Mattapan Trolley':
-				toReturn.fillColor = helpers.lineColors.red;
-				break;
-		}
-
 		return toReturn;
 	},
 	getIcon: function(icon){
-		var hasRed = false,
-			hasBlue = false,
-			hasGreen = false,
-			hasOrange = false;
-		$.each(icon.directions, function(i, dir){
-			$.each(dir.substops, function(i, substop){
-				switch(substop.line){
-					case 'Green Line':
-						hasGreen = true;
-						break;
-					case 'Orange Line':
-						hasOrange = true;
-						break;
-					case 'Blue Line':
-						hasBlue = true;
-						break;
-					case 'Red Line':
-					case 'Mattapan Trolley':
-						hasRed = true;
-						break;
-				}
-			})
-		});
+		//var hasRed = false,
+		//	hasBlue = false,
+		//	hasGreen = false,
+		//	hasOrange = false;
+		//$.each(icon.directions, function(i, dir){
+		//	$.each(dir.substops, function(i, substop){
+		//		switch(substop.line){
+		//			case 'Green Line':
+		//				hasGreen = true;
+		//				break;
+		//			case 'Orange Line':
+		//				hasOrange = true;
+		//				break;
+		//			case 'Blue Line':
+		//				hasBlue = true;
+		//				break;
+		//			case 'Red Line':
+		//			case 'Mattapan Trolley':
+		//				hasRed = true;
+		//				break;
+		//		}
+		//	})
+		//});
 		var toReturn = {
 			scaledSize: new google.maps.Size(24, 24),
-			anchor: new google.maps.Point(12, 12)
+			anchor: new google.maps.Point(12, 12),
+			url: helpers.getLineIcon(icon.line)
 		};
 
-		if (hasRed && hasGreen){
-			toReturn.url = helpers.iconUrls.redGreen;
-		} else if (hasRed && hasOrange){
-			toReturn.url = helpers.iconUrls.redOrange;
-		} else if (hasOrange && hasGreen){
-			toReturn.url = helpers.iconUrls.orangeGreen;
-		} else if (hasGreen && hasBlue){
-			toReturn.url = helpers.iconUrls.blueGreen;
-		} else if (hasRed){
-			toReturn.url = helpers.iconUrls.red;
-		} else if (hasGreen){
-			toReturn.url = helpers.iconUrls.green;
-		} else if (hasBlue){
-			toReturn.url = helpers.iconUrls.blue;
-		} else if (hasOrange){
-			toReturn.url = helpers.iconUrls.orange;
-		} else {
-			console.log("Failed a line");
-		}
+		//if (hasRed && hasGreen){
+		//	toReturn.url = helpers.iconUrls.redGreen;
+		//} else if (hasRed && hasOrange){
+		//	toReturn.url = helpers.iconUrls.redOrange;
+		//} else if (hasOrange && hasGreen){
+		//	toReturn.url = helpers.iconUrls.orangeGreen;
+		//} else if (hasGreen && hasBlue){
+		//	toReturn.url = helpers.iconUrls.blueGreen;
+		//} else if (hasRed){
+		//	toReturn.url = helpers.iconUrls.red;
+		//} else if (hasGreen){
+		//	toReturn.url = helpers.iconUrls.green;
+		//} else if (hasBlue){
+		//	toReturn.url = helpers.iconUrls.blue;
+		//} else if (hasOrange){
+		//	toReturn.url = helpers.iconUrls.orange;
+		//} else {
+		//	console.log("Failed a line");
+		//}
 
 		return toReturn;
 	},
@@ -112,6 +124,15 @@ var helpers = {
 		var amPm = (date.getHours() >= 12) ? 'pm' : 'am';
 
 		return hours + ':' + minutes + ':' + seconds + ' ' + amPm;
+	},
+	secondsToTimeString: function(time){
+		var minutes = Math.floor(time/60);
+
+		if (minutes > 0){
+			return minutes + " mins away";
+		} else {
+			return "Arriving";
+		}
 	}
 };
 
@@ -124,8 +145,6 @@ function Stop(lat, lng, name, directions){
 	this.getIcon = function(){
 		helpers.getIcon(this);
 	}
-
-	
 }
 
 function Direction(name, substops){
@@ -201,9 +220,6 @@ var templates;
 
 $(function(){
 	templates = {
-		infoWindow: Handlebars.compile($("#hb-info-window").html()),
-		loading: Handlebars.compile($("#hb-loading").html()),
-		trips: Handlebars.compile($("#hb-trips").html()),
-		error: Handlebars.compile($("#hb-error").html())
+		infoWindow: Handlebars.compile($("#hb-info-window").html())
 	};
 });
