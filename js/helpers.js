@@ -129,3 +129,11 @@ function LiveTrain(id, line, destination, lat, lng, bearing){
 	this.lng = lng;
 	this.bearing = bearing;
 }
+
+var templates = {};
+
+$(function(){
+	templates = {
+		predictionInfo: Handlebars.compile($("#prediction-info-template").html())
+	};
+});

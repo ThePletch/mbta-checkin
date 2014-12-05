@@ -173,39 +173,26 @@ var mapper = (function(){
 				title: marker.name,
 				icon: marker.icon || helpers.getIcon(marker)
 			});
-
+			
 			google.maps.event.addListener(gMarker, 'click', function(){
 				mbta.getNextTrainsToStop(marker.id, function(result){
-					console.log(result);
-					var alerts = [];
+					//show any alerts sent in alert ticker
+					ui.displayAlerts(result.alert_headers.map(function(a){
+						return a.header_text;
+					}));
+
 					$.each(result.mode, function(i, mode){
-						alerts.push(mode.mode_name + " info for " + marker.name);
-						$.each(mode.route, function(i, route){
-							if (mode.route.length > 1){
-								alerts.push(route.route_name + " (" + route.direction[0].trip[0].trip_headsign + "):");
-							}
+						$.each(mode.route, function(j, route){
+							route.route_name += " (" + route.direction[0].trip[0].trip_headsign + ")";
 
-							$.each(route.direction, function(i, direction){
-								var directionAlert = direction.trip[0].trip_headsign + ": ";
-
-								var predictedTime = new Date(parseInt(direction.trip[0].pre_dt) * 1000);
-								var predictedTimeAway = parseInt(direction.trip[0].pre_away);
-
-								directionAlert += helpers.dateToTime(predictedTime);
-
-								//terminal stations don't have time away
-								if (predictedTimeAway){
-									directionAlert += " (" + helpers.secondsToTimeString(predictedTimeAway) + ")";
-								}
-
-								alerts.push(directionAlert);
+							$.each(route.direction, function(k, dir){
+								dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
+								dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
 							});
 						});
 					});
 
-					
-
-					ui.displayAlerts(alerts);
+					ui.displayModal('predictionInfo', result);
 				});
 			});
 
@@ -225,6 +212,9 @@ var mapper = (function(){
 
 var ui = (function(){
 	var alertMsgSelector = "#alert-message";
+	var modalSelector = "#modal-info";
+	var modalWrapperSelector = "#modal-info-wrapper";
+	var modalSlideTransitionMs = 500;
 	var alertSwitchLengthMs = 2000;
 	var self = {
 		initialize: function(){
@@ -253,6 +243,10 @@ var ui = (function(){
 				$('#' + target).slideToggle();
 				$(this).toggleClass("open");
 			});
+			$('[data-close]').click(function(){
+				var target = $(this).attr('data-close');
+				$('#' + target).removeClass('visible');
+			})
 		},
 		displayAlert: function(alert, isWarning){
 			isWarning = isWarning || false;
@@ -269,6 +263,13 @@ var ui = (function(){
 					self.displayAlert(a);
 				}, alertSwitchLengthMs * i);
 			});
+		},
+		displayModal: function(templateName, dataObject){
+			$(modalWrapperSelector).removeClass('visible');
+			setTimeout(function(){
+				$(modalSelector).html(templates[templateName](dataObject));
+				$(modalWrapperSelector).addClass('visible');
+			}, modalSlideTransitionMs);
 		},
 		zoomToUserLocation: function(){
 			app.getUserLocation(function(result){

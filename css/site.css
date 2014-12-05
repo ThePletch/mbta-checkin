@@ -58,20 +58,31 @@ a:hover{
 	text-align: center;
 }
 
-.toggle{
+.toggle-wrapper{
 	border: 1px solid #fff;
 	background-color: #777;
-	font-size: 0.9em;
+}
+.toggle{
+	font-size: 0.8em;
 	color: #fff;
-	padding: 0 5px;
 }
 
-.toggle:before{
+.toggler.open .toggle.top:before{
 	content: "\2227";
 }
 
-.toggle.open:before{
+.toggle.top:before{
 	content: "\2228";
+}
+
+.toggle.left{
+	width: 30px;
+	position: absolute;
+	top: -1px;
+	left: -1px;
+	bottom: -1px;
+	border-top-left-radius: 10px;
+	border-bottom-left-radius: 10px;
 }
 
 .slider-bottom{
@@ -81,14 +92,17 @@ a:hover{
 	border-top-right-radius: 10px;
 	border-bottom: none;
 }
-.slider-bottom .toggle{
-	position: relative;
-	top: -9px;
-	border-bottom-right-radius: 10px;
-	border-bottom-left-radius: 10px;
+.slider-bottom .toggle-wrapper{
+	position: absolute;
+	top: -1px;
+	left: -1px;
+	right: -1px;
+	border-top-right-radius: 10px;
+	border-top-left-radius: 10px;
 }
 
 .train-feed{
+	padding-top: 30px;
 	right: 1em;
 }
 
@@ -96,7 +110,7 @@ a:hover{
 	right: 150px;
 }
 
-.train-updaters li button{
+.train-updaters button{
 	min-width: 70px;
 }
 
@@ -117,4 +131,67 @@ a:hover{
 }
 #alert-message.warning{
 	color: #c33;
+}
+
+/* modal window styles */
+
+#modal-info-wrapper{
+	position: fixed;
+	top: 0;
+	width: 30%;
+	right: -35%;
+	bottom: 280px;
+	margin-top: 5px;
+	border-top-left-radius: 10px;
+	border-bottom-left-radius: 10px;
+	transition: right 0.5s ease-in-out;
+	padding-left: 35px;
+}
+.modal-scroller{
+	overflow: auto;
+	height: 100%;
+}
+
+#modal-info-wrapper.visible{
+	right: -1px;
+}
+
+.close-marker{
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	height: 30%;
+	width: 50%;
+	margin: -15% 0 0 -25%;
+	text-align: center;
+}
+
+/* mobile styles */
+@media screen and (max-width: 500px) {
+	#modal-info-wrapper{
+		bottom: 0;
+		margin: 5px;
+		margin-right: -1px;
+		right: -100%;
+		left: 100%;
+		z-index: 1;
+		transition: left 0.5s ease-in-out;
+		min-width: 90%;
+	}
+	#modal-info-wrapper.visible{
+		left: -1px;
+	}
+	.alert-pane{
+		display: none;
+	}
+	.train-updaters button{
+		min-width: 140px;
+	}
+	.width-standardizer{
+		min-width: 182px;
+	}
+
+	.user-location{
+		right: 220px;
+	}
 }
