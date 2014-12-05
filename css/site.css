@@ -167,7 +167,7 @@ a:hover{
 }
 
 /* mobile styles */
-@media screen and (max-width: 500px) {
+@media screen and (max-device-width: 500px) {
 	#modal-info-wrapper{
 		bottom: 0;
 		margin: 5px;
@@ -185,13 +185,18 @@ a:hover{
 		display: none;
 	}
 	.train-updaters button{
-		min-width: 140px;
+		min-width: 110px;
 	}
 	.width-standardizer{
-		min-width: 182px;
+		min-width: 152px;
+	}
+
+	.train-feed{
+		right: 5px;
 	}
 
 	.user-location{
-		right: 220px;
+		right: 175px;
+		font-size: 0.8em;
 	}
 }
