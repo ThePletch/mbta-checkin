@@ -1,80 +1,80 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta name="viewport" content="width=device-width" />
-		<!--External libraries-->
-		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
-		<link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
-		<script src="js/google_style.js"></script>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <!--External libraries-->
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
+        <link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
+        <script src="js/google_style.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
         <!--End external libraries-->
 
         <script src="js/handlebars-v2.0.0.js"></script>
         <script id="prediction-info-template" type="text/x-handlebars-template">
-			<h3>{{stop_name}}</h3>
-			<ul>
-			{{#each mode}}
-				<li>
-					<h4>{{mode_name}}</h4>
-					<ul>
-					{{#each route}}
-						<h5>{{route_name}}</h5>
-						<ul>
-						{{#each direction}}
-							<li>
-								{{direction_name}}: {{predict_str}} ({{away_str}})
-							</li>
-						{{/each}}
-						</ul>
-					{{/each}}
-					</ul>
-				</li>
-			{{/each}}
-			</ul>
-		</script>
+            <h3>{{stop_name}}</h3>
+            <ul>
+            {{#each mode}}
+                <li>
+                    <h4>{{mode_name}}</h4>
+                    <ul>
+                    {{#each route}}
+                        <h5>{{route_name}}</h5>
+                        <ul>
+                        {{#each direction}}
+                            <li>
+                                {{direction_name}}: {{predict_str}} ({{away_str}})
+                            </li>
+                        {{/each}}
+                        </ul>
+                    {{/each}}
+                    </ul>
+                </li>
+            {{/each}}
+            </ul>
+        </script>
         
-		<script src="js/helpers.js"></script>
-		<script src="js/all_stops.js"></script>
-		<script src="js/map.js"></script>
-		<link rel="stylesheet" href="css/picnic.css" />
-		<link rel="stylesheet" href="css/site.css" />
-	</head>
-	<body>
-		<div id="viewport-wrapper">
-			<div id="viewport"></div>
-		</div>
-		<div id="console">
-			<div id="modal-info-wrapper" class="ui-element">
-				<a data-close="modal-info-wrapper">
-					<div class="toggle toggle-wrapper left">
-						<div class="close-marker">&gt;</div>
-					</div>
-				</a>
-				<div class="modal-scroller">
-					<div id="modal-info"></div>
-				</div>
-			</div>
-			<div class="alert-pane ui-element">
-				<div id="alert-message">Welcome to the MBTA Information Console</div>
-			</div>
-			<div class="user-location ui-element slider slider-bottom">
-				<button id="zoom-location">My Location</button>
-			</div>
-			<div class="train-feed ui-element slider slider-bottom">
-				<a class="toggler" data-toggle="train-updaters">
-					<div class="toggle-wrapper">
-						<span class="toggle top open"></span>
-					</div>
-				</a>
-				<h4>Update Trains</h4>
-				<div class="width-standardizer"></div>
-				<ul class="train-updaters" id="train-updaters">
-					<li><button id="update-green" class="success">Green</button></li>
-					<li><button id="update-orange" class="warning">Orange</button></li>
-					<li><button id="update-red" class="error">Red</button></li>
-					<li><button id="update-blue">Blue</button></li>
-				</ul>
-			</div>
-		</div>
-	</body>
+        <script src="js/helpers.js"></script>
+        <script src="js/all_stops.js"></script>
+        <script src="js/map.js"></script>
+        <link rel="stylesheet" href="css/picnic.css" />
+        <link rel="stylesheet" href="css/site.css" />
+    </head>
+    <body>
+        <div id="viewport-wrapper">
+            <div id="viewport"></div>
+        </div>
+        <div id="console">
+            <div id="modal-info-wrapper" class="ui-element">
+                <a data-close="modal-info-wrapper">
+                    <div class="toggle toggle-wrapper left">
+                        <div class="close-marker">&gt;</div>
+                    </div>
+                </a>
+                <div class="modal-scroller">
+                    <div id="modal-info"></div>
+                </div>
+            </div>
+            <div class="alert-pane ui-element">
+                <div id="alert-message">Welcome to the MBTA Information Console</div>
+            </div>
+            <div class="user-location ui-element slider slider-bottom">
+                <button id="zoom-location">My Location</button>
+            </div>
+            <div class="train-feed ui-element slider slider-bottom">
+                <a class="toggler" data-toggle="train-updaters">
+                    <div class="toggle-wrapper">
+                        <span class="toggle top open"></span>
+                    </div>
+                </a>
+                <h4>Update Trains</h4>
+                <div class="width-standardizer"></div>
+                <ul class="train-updaters" id="train-updaters">
+                    <li><button id="update-green" class="success">Green</button></li>
+                    <li><button id="update-orange" class="warning">Orange</button></li>
+                    <li><button id="update-red" class="error">Red</button></li>
+                    <li><button id="update-blue">Blue</button></li>
+                </ul>
+            </div>
+        </div>
+    </body>
 </html>
