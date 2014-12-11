@@ -1,139 +1,139 @@
 Number.prototype.leftPad = function(len, padder){
     var s = this.toString(),
-    	padder = padder || '0';
+        padder = padder || '0';
 
     while(s.length < len){
-    	s = padder + s;
+        s = padder + s;
     }
 
     return s;
 };
 
 var helpers = {
-	iconUrls: {
-		red: 'img/red_line.png',
-		green: 'img/green_line.png',
-		blue: 'img/blue_line.png',
-		orange: 'img/orange_line.png',
-		redGreen: 'img/red_green_line.png',
-		redOrange: 'img/red_orange_line.png',
-		orangeBlue: '',
-		blueGreen: 'img/green_blue_line.png',
-		orangeGreen: 'img/orange_green_line.png'
-	},
-	lineColors: {
-		red: "#ff0000",
-		green: "#00ff00",
-		blue: "#0000ff",
-		orange: "#ff8800"
-	},
-	getLineColor: function(lineColor){
-		switch(lineColor){
-			case 'Green Line':
-				return helpers.lineColors.green;
-			case 'Orange Line':
-				return helpers.lineColors.orange;
-			case 'Blue Line':
-				return helpers.lineColors.blue;
-			case 'Red Line':
-			case 'Mattapan Trolley':
-				return helpers.lineColors.red;
-		}
-	},
-	getLineIcon: function(lineColor){
-		switch(lineColor){
-			case 'Green Line':
-				return helpers.iconUrls.green;
-			case 'Orange Line':
-				return helpers.iconUrls.orange;
-			case 'Blue Line':
-				return helpers.iconUrls.blue;
-			case 'Red Line':
-			case 'Mattapan Trolley':
-				return helpers.iconUrls.red;
-		}
-	},
-	getLiveIcon: function(train){
-		var toReturn = {
-			path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-			fillColor: helpers.getLineColor(train.line),
-			fillOpacity: 1,
-			rotation: train.bearing,
-			scale: 4,
-			strokeWeight: 1
-		};
+    iconUrls: {
+        red: 'img/red_line.png',
+        green: 'img/green_line.png',
+        blue: 'img/blue_line.png',
+        orange: 'img/orange_line.png',
+        redGreen: 'img/red_green_line.png',
+        redOrange: 'img/red_orange_line.png',
+        orangeBlue: '',
+        blueGreen: 'img/green_blue_line.png',
+        orangeGreen: 'img/orange_green_line.png'
+    },
+    lineColors: {
+        red: '#ff0000',
+        green: '#00ff00',
+        blue: '#0000ff',
+        orange: '#ff8800'
+    },
+    getLineColor: function(lineColor){
+        switch(lineColor){
+            case 'Green Line':
+                return helpers.lineColors.green;
+            case 'Orange Line':
+                return helpers.lineColors.orange;
+            case 'Blue Line':
+                return helpers.lineColors.blue;
+            case 'Red Line':
+            case 'Mattapan Trolley':
+                return helpers.lineColors.red;
+        }
+    },
+    getLineIcon: function(lineColor){
+        switch(lineColor){
+            case 'Green Line':
+                return helpers.iconUrls.green;
+            case 'Orange Line':
+                return helpers.iconUrls.orange;
+            case 'Blue Line':
+                return helpers.iconUrls.blue;
+            case 'Red Line':
+            case 'Mattapan Trolley':
+                return helpers.iconUrls.red;
+        }
+    },
+    getLiveIcon: function(train){
+        var toReturn = {
+            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+            fillColor: helpers.getLineColor(train.line),
+            fillOpacity: 1,
+            rotation: train.bearing,
+            scale: 4,
+            strokeWeight: 1
+        };
 
-		return toReturn;
-	},
-	getIcon: function(icon){
-		var toReturn = {
-			scaledSize: new google.maps.Size(24, 24),
-			anchor: new google.maps.Point(12, 12),
-			url: helpers.getLineIcon(icon.line)
-		};
+        return toReturn;
+    },
+    getIcon: function(icon){
+        var toReturn = {
+            scaledSize: new google.maps.Size(24, 24),
+            anchor: new google.maps.Point(12, 12),
+            url: helpers.getLineIcon(icon.line)
+        };
 
-		return toReturn;
-	},
-	dateToTime: function(date){
-		var hours = (date.getHours() - 1) % 12 + 1;
-		var minutes = date.getMinutes().leftPad(2);
-		var seconds = date.getSeconds().leftPad(2);
-		var amPm = (date.getHours() >= 12) ? 'pm' : 'am';
+        return toReturn;
+    },
+    dateToTime: function(date){
+        var hours = (date.getHours() - 1) % 12 + 1;
+        var minutes = date.getMinutes().leftPad(2);
+        var seconds = date.getSeconds().leftPad(2);
+        var amPm = (date.getHours() >= 12) ? 'pm' : 'am';
 
-		return hours + ':' + minutes + ':' + seconds + ' ' + amPm;
-	},
-	secondsToTimeString: function(time){
-		var minutes = Math.floor(time/60);
+        return hours + ':' + minutes + ':' + seconds + ' ' + amPm;
+    },
+    secondsToTimeString: function(time){
+        var minutes = Math.floor(time/60);
 
-		if (minutes > 0){
-			return minutes + " mins away";
-		} else {
-			return "Arriving";
-		}
-	}
+        if (minutes > 0){
+            return minutes + ' mins away';
+        } else {
+            return 'Arriving';
+        }
+    }
 };
 
 function Stop(lat, lng, name, directions){
-	this.lat = lat;
-	this.lng = lng;
-	this.name = name;
-	this.directions = directions || {};
+    this.lat = lat;
+    this.lng = lng;
+    this.name = name;
+    this.directions = directions || {};
 
-	this.getIcon = function(){
-		helpers.getIcon(this);
-	}
+    this.getIcon = function(){
+        helpers.getIcon(this);
+    }
 }
 
 function Direction(name, substops){
-	this.name = name;
-	this.substops = substops || [];
+    this.name = name;
+    this.substops = substops || [];
 }
 
 function Substop(id, name, line){
-	this.id = id;
-	this.name = name;
-	this.line = line;
+    this.id = id;
+    this.name = name;
+    this.line = line;
 }
 
 function Train(name, eta, etaString){
-	this.name = name;
-	this.eta = eta;
-	this.etaString = etaString;
+    this.name = name;
+    this.eta = eta;
+    this.etaString = etaString;
 }
 
 function LiveTrain(id, line, destination, lat, lng, bearing){
-	this.id = id;
-	this.line = line;
-	this.destination = destination;
-	this.lat = lat;
-	this.lng = lng;
-	this.bearing = bearing;
+    this.id = id;
+    this.line = line;
+    this.destination = destination;
+    this.lat = lat;
+    this.lng = lng;
+    this.bearing = bearing;
 }
 
 var templates = {};
 
 $(function(){
-	templates = {
-		predictionInfo: Handlebars.compile($("#prediction-info-template").html())
-	};
+    templates = {
+        predictionInfo: Handlebars.compile($('#prediction-info-template').html())
+    };
 });
