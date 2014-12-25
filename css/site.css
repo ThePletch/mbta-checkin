@@ -166,6 +166,10 @@ a:hover{
 	text-align: center;
 }
 
+.prediction-well{
+	padding-left: 10px;
+}
+
 /* mobile styles */
 @media screen and (max-device-width: 500px) {
 	#modal-info-wrapper{
