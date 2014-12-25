@@ -125,16 +125,12 @@ var mbta = (function(){
                 findAllTrains(route);
             });
         },
-        getNextTrainsToStop: function(stop, callback){
+        getNextTrainsToStop: function(stop, callback, errorCallback){
             var toReturn = [];
             var requestsMade = 0;
             var requestsCompleted = 0;
 
-            console.log(stop);
-
-            makeApiRequest('predictionsbystop', {stop: stop}, function(result){
-                callback(result);
-            });
+            makeApiRequest('predictionsbystop', {stop: stop}, callback, errorCallback);
         }
     };
 
@@ -142,9 +138,39 @@ var mbta = (function(){
 }());
 
 var mapper = (function(){
+    var click = {
+        stopMarker: function(marker){
+            self.markStopSelected(marker);
+            mbta.getNextTrainsToStop(marker.id, function(result){
+                //show any alerts sent in alert ticker
+                ui.displayAlerts(result.alert_headers.map(function(a){
+                    return a.header_text;
+                }));
+
+                $.each(result.mode, function(i, mode){
+                    $.each(mode.route, function(j, route){
+                        route.route_name += ' (' + route.direction[0].trip[0].trip_headsign + ')';
+
+                        $.each(route.direction, function(k, dir){
+                            dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
+                            dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
+                        });
+                    });
+                });
+
+                ui.displayModal('predictionInfo', result);
+                self.markSelectedStopState('success');
+            }, function(error){
+                ui.displayAlert(error, true);
+                self.markSelectedStopState('error');
+            });
+        }
+    };
+
     var self = {
         map: null,
         center: {lat: 42.358, lng: -71.064},
+        selected: null,
         zoom: 14,
         initialize: function(){
             self.map = new google.maps.Map(document.getElementById('viewport'), {
@@ -154,7 +180,43 @@ var mapper = (function(){
                 backgroundColor: '#2a2a2a'
             });
 
+            helpers.events.bind('modal-closed', function(){
+                self.removeSelected();
+            });
+
             self.placeStopMarkers(allStops);
+        },
+        markSelectedStopState: function(state){
+            var iconUrl;
+            switch (state){
+                case 'error':
+                    iconUrl = helpers.iconUrls.selectedError;
+                    break;
+                case 'success':
+                    iconUrl = helpers.iconUrls.selectedSuccess;
+                    break;
+            }
+
+            var currentIcon = self.selected.getIcon();
+            currentIcon.url = iconUrl;
+            self.selected.setIcon(currentIcon);
+        },
+        markStopSelected: function(marker){
+            console.log(marker);
+            //delete any existing selection marker
+            if (self.selected){
+                self.removeSelected();
+            }
+
+            self.selected = new google.maps.Marker({
+                position: new google.maps.LatLng(marker.lat, marker.lng),
+                map: self.map,
+                icon: {
+                    url: helpers.iconUrls.selected,
+                    scaledSize: new google.maps.Size(33, 33),
+                    anchor: new google.maps.Point(16, 16)
+                }
+            });
         },
         placeVehicleMarker: function(marker){
             var gMarker = new google.maps.Marker({
@@ -175,25 +237,7 @@ var mapper = (function(){
             });
             
             google.maps.event.addListener(gMarker, 'click', function(){
-                mbta.getNextTrainsToStop(marker.id, function(result){
-                    //show any alerts sent in alert ticker
-                    ui.displayAlerts(result.alert_headers.map(function(a){
-                        return a.header_text;
-                    }));
-
-                    $.each(result.mode, function(i, mode){
-                        $.each(mode.route, function(j, route){
-                            route.route_name += ' (' + route.direction[0].trip[0].trip_headsign + ')';
-
-                            $.each(route.direction, function(k, dir){
-                                dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
-                                dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
-                            });
-                        });
-                    });
-
-                    ui.displayModal('predictionInfo', result);
-                });
+                click.stopMarker(marker);
             });
 
             return gMarker;
@@ -205,6 +249,10 @@ var mapper = (function(){
             $.each(markers, function(i, marker){
                 self.placeStopMarker(extractor(marker));
             });
+        },
+        removeSelected: function(){
+            self.selected.setMap(null);
+            self.selected = null;
         }
     };
     return self;
@@ -225,15 +273,19 @@ var ui = (function(){
             $('#zoom-location').click(self.zoomToUserLocation);
             $('#update-blue').click(function(){
                 mbta.updateTrainLocations(routesByLine['Blue Line']);
+                helpers.events.fire('blue-updated');
             });
             $('#update-green').click(function(){
                 mbta.updateTrainLocations(routesByLine['Green Line']);
+                helpers.events.fire('green-updated');
             });
             $('#update-orange').click(function(){
                 mbta.updateTrainLocations(routesByLine['Orange Line']);
+                helpers.events.fire('orange-updated');
             });
             $('#update-red').click(function(){
                 mbta.updateTrainLocations(routesByLine['Red Line']);
+                helpers.events.fire('red-updated');
             });
         },
         bindToggles: function(){
@@ -246,7 +298,10 @@ var ui = (function(){
             $('[data-close]').click(function(){
                 var target = $(this).attr('data-close');
                 $('#' + target).removeClass('visible');
-            })
+
+                var eventName = $(this).attr('data-close-event');
+                helpers.events.fire(eventName);
+            });
         },
         displayAlert: function(alert, isWarning){
             isWarning = isWarning || false;

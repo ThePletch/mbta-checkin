@@ -10,6 +10,23 @@ Number.prototype.leftPad = function(len, padder){
 };
 
 var helpers = {
+    events: (function(){
+        var self = {
+            _ev: {},
+            bind: function(eventName, func){
+                self._ev[eventName] = self._ev[eventName] || [];
+                self._ev[eventName].push(func);
+            },
+            fire: function(eventName, params){
+                if (!self._ev[eventName])
+                $.each(self._ev[eventName], function(i, func){
+                    func(params);
+                });
+            }
+        };
+
+        return self;
+    }()),
     iconUrls: {
         red: 'img/red_line.png',
         green: 'img/green_line.png',
@@ -19,12 +36,17 @@ var helpers = {
         redOrange: 'img/red_orange_line.png',
         orangeBlue: '',
         blueGreen: 'img/green_blue_line.png',
-        orangeGreen: 'img/orange_green_line.png'
+        orangeGreen: 'img/orange_green_line.png',
+        selected: 'img/selected.png',
+        selectedError: 'img/selected_error.png',
+        selectedSuccess: 'img/selected_success.png',
     },
+    // these colors control the color of live train icons
+    // and the color of line overlays
     lineColors: {
         red: '#ff0000',
         green: '#00ff00',
-        blue: '#0000ff',
+        blue: '#0077cc',
         orange: '#ff8800'
     },
     getLineColor: function(lineColor){

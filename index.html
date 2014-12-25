@@ -7,28 +7,26 @@
         <link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
         <script src="js/google_style.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="js/analytics.js"></script>
         <!--End external libraries-->
 
         <script src="js/handlebars-v2.0.0.js"></script>
         <script id="prediction-info-template" type="text/x-handlebars-template">
             <h3>{{stop_name}}</h3>
-            <ul>
             {{#each mode}}
-                <li>
-                    <h4>{{mode_name}}</h4>
-                    <ul>
+                <h4>{{mode_name}}</h4>
+                <div class="prediction-well">
                     {{#each route}}
                         <h5>{{route_name}}</h5>
-                        <ul>
+                        <div class="prediction-well">
                         {{#each direction}}
-                            <li>
+                            <div>
                                 {{direction_name}}: {{predict_str}} ({{away_str}})
-                            </li>
+                            </div>
                         {{/each}}
-                        </ul>
+                        </div>
                     {{/each}}
-                    </ul>
-                </li>
+                </div>
             {{/each}}
             </ul>
         </script>
@@ -45,7 +43,7 @@
         </div>
         <div id="console">
             <div id="modal-info-wrapper" class="ui-element">
-                <a data-close="modal-info-wrapper">
+                <a data-close="modal-info-wrapper" data-close-event="modal-closed">
                     <div class="toggle toggle-wrapper left">
                         <div class="close-marker">&gt;</div>
                     </div>
