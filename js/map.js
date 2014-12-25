@@ -188,6 +188,7 @@ var mapper = (function(){
         },
         markSelectedStopState: function(state){
             var iconUrl;
+            
             switch (state){
                 case 'error':
                     iconUrl = helpers.iconUrls.selectedError;
@@ -202,7 +203,6 @@ var mapper = (function(){
             self.selected.setIcon(currentIcon);
         },
         markStopSelected: function(marker){
-            console.log(marker);
             //delete any existing selection marker
             if (self.selected){
                 self.removeSelected();
@@ -328,7 +328,6 @@ var ui = (function(){
         },
         zoomToUserLocation: function(){
             app.getUserLocation(function(result){
-                console.log(result);
                 mapper.map.setCenter(new google.maps.LatLng(result.latitude, result.longitude));
                 mapper.map.setZoom(16);
             });

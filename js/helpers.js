@@ -18,7 +18,11 @@ var helpers = {
                 self._ev[eventName].push(func);
             },
             fire: function(eventName, params){
-                if (!self._ev[eventName])
+                if (!self._ev[eventName]){
+                    // swallows error if event is fired with no bindings
+                    return;
+                }
+
                 $.each(self._ev[eventName], function(i, func){
                     func(params);
                 });
