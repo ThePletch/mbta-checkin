@@ -31,24 +31,34 @@ var app = (function(){
 var mbta = (function(){
     var apiUrl = 'http://realtime.mbta.com/developer/api/v2/';
     
-    function makeApiRequest(path, additionalParams, callback, errorCallback){
+    function makeApiRequest(path, additionalParams, callback, errorCallback, triggerStatusEvents){
         var params = {
             api_key: 'dHl1-NB5RUSVzujwXXlDZg'
         };
 
         additionalParams = additionalParams || {};
-        errorCallback = errorCallback || function(thrown){
-            ui.displayAlert(thrown, true);
-        };
+        triggerStatusEvents = typeof triggerStatusEvents !== 'undefined' ? triggerStatusEvents : true;
 
         for (var param in additionalParams){
             params[param] = additionalParams[param];
         }
 
+        if (triggerStatusEvents){
+            helpers.events.fire('mbta-api-sent');
+        }
+
         $.ajax(apiUrl + path, {
             data: params,
-            success: callback,
+            success: function(data){
+                if (triggerStatusEvents){
+                    helpers.events.fire('mbta-api-completed', data);
+                }
+                callback(data);
+            },
             error: function(xhr, status, thrown){
+                if (triggerStatusEvents){
+                    helpers.events.fire('mbta-api-error', thrown);
+                }
                 errorCallback(thrown);
             }
         });
@@ -69,19 +79,25 @@ var mbta = (function(){
             makeApiRequest('stopsbyroute', {route: routeName}, callback);
         },
         getTrainsByRoute: function(routeName, callback, errorCallback){
-            makeApiRequest('vehiclesbyroute', {route: routeName}, callback, errorCallback);
+            makeApiRequest('vehiclesbyroute', {route: routeName}, callback, errorCallback, false);
         },
         updateTrainLocations: function(routes){
-            ui.displayAlert('Fetching train locations...');
             var trainsFound = {};
             var callsMade = 0;
+            var callsFailed = 0;
             var callsCompleted = 0;
+
+            helpers.events.fire('mbta-api-sent');
 
             function completeCall(){
                 callsCompleted++;
                 if (callsMade === callsCompleted){
                     refreshTrainMarkers(trainsFound);
-                    ui.displayAlert('Train locations updated.');
+                    if (callsFailed < callsCompleted){
+                        helpers.events.fire('mbta-api-completed');
+                    } else {
+                        helpers.events.fire('mbta-api-error', 'Could not fetch train locations.');
+                    }
                 }
             }
 
@@ -105,7 +121,10 @@ var mbta = (function(){
                     });
                     
                     completeCall();
-                }, completeCall);
+                }, function(){
+                    callsFailed++;
+                    completeCall();
+                });
             }
 
             function refreshTrainMarkers(trains){
@@ -142,10 +161,7 @@ var mapper = (function(){
         stopMarker: function(marker){
             self.markStopSelected(marker);
             mbta.getNextTrainsToStop(marker.id, function(result){
-                //show any alerts sent in alert ticker
-                ui.displayAlerts(result.alert_headers.map(function(a){
-                    return a.header_text;
-                }));
+                helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map(function(a){ return a.header_text; }));
 
                 $.each(result.mode, function(i, mode){
                     $.each(mode.route, function(j, route){
@@ -158,10 +174,10 @@ var mapper = (function(){
                     });
                 });
 
-                ui.displayModal('predictionInfo', result);
+                helpers.events.fire('mapper-mbta-predictions', result);
+
                 self.markSelectedStopState('success');
             }, function(error){
-                ui.displayAlert(error, true);
                 self.markSelectedStopState('error');
             });
         }
@@ -177,12 +193,15 @@ var mapper = (function(){
                 center: self.center,
                 zoom: self.zoom,
                 styles: mapStyle,
-                backgroundColor: '#2a2a2a'
+                backgroundColor: '#2a2a2a',
+                disableDefaultUI: true
             });
 
             helpers.events.bind('modal-closed', function(){
                 self.removeSelected();
             });
+
+            helpers.events.bind('ui-location-found', self.zoomToLocation);
 
             self.placeStopMarkers(allStops);
         },
@@ -253,6 +272,10 @@ var mapper = (function(){
         removeSelected: function(){
             self.selected.setMap(null);
             self.selected = null;
+        },
+        zoomToLocation: function(location){
+            self.map.setCenter(new google.maps.LatLng(location.latitude, location.longitude));
+            self.map.setZoom(16);
         }
     };
     return self;
@@ -265,12 +288,52 @@ var ui = (function(){
     var modalSlideTransitionMs = 500;
     var alertSwitchLengthMs = 2000;
     var self = {
+        statusIndicator: {
+            selector: '#status-indicator',
+            setStatus: function(status, tooltip){
+                var newImg = '';
+                switch (status){
+                    case 'loading':
+                        newImg = helpers.iconUrls.statusLoading;
+                        break;
+                    case 'error':
+                        newImg = helpers.iconUrls.statusError;
+                        break;
+                    case 'success':
+                        newImg = helpers.iconUrls.statusSuccess;
+                        break;
+                    default:
+                        newImg = '?';
+                        break;
+                }
+                $(self.statusIndicator.selector).attr('src', newImg);
+                $(self.statusIndicator.selector).attr('title', tooltip || '');
+            }
+        },
         initialize: function(){
             self.bindButtons();
             self.bindToggles();
+
+            helpers.events.bind('mapper-mbta-alerts', self.displayAlerts);
+
+            helpers.events.bind('mapper-mbta-predictions', function(predictions){
+                self.displayModal('predictionInfo', predictions);
+            });
+
+            helpers.events.bind('mbta-api-sent', function(){
+                self.statusIndicator.setStatus('loading');
+            });
+
+            helpers.events.bind('mbta-api-completed', function(){
+                self.statusIndicator.setStatus('success');
+            });
+
+            helpers.events.bind('mbta-api-error', function(error){
+                self.statusIndicator.setStatus('error', error);
+            });
         },
         bindButtons: function(){
-            $('#zoom-location').click(self.zoomToUserLocation);
+            $('#zoom-location').click(self.fetchUserLocation);
             $('#update-blue').click(function(){
                 mbta.updateTrainLocations(routesByLine['Blue Line']);
                 helpers.events.fire('blue-updated');
@@ -326,10 +389,9 @@ var ui = (function(){
                 $(modalWrapperSelector).addClass('visible');
             }, modalSlideTransitionMs);
         },
-        zoomToUserLocation: function(){
+        fetchUserLocation: function(){
             app.getUserLocation(function(result){
-                mapper.map.setCenter(new google.maps.LatLng(result.latitude, result.longitude));
-                mapper.map.setZoom(16);
+                helpers.events.fire('ui-location-found', result);
             });
         }
     };
