@@ -44,6 +44,9 @@ var helpers = {
         selected: 'img/selected.png',
         selectedError: 'img/selected_error.png',
         selectedSuccess: 'img/selected_success.png',
+        statusLoading: 'img/spinner.gif',
+        statusSuccess: 'img/success.png',
+        statusError: 'img/error.png'
     },
     // these colors control the color of live train icons
     // and the color of line overlays

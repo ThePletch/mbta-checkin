@@ -26,6 +26,10 @@ a:hover{
 	color: inherit;
 }
 
+img:not([src]){
+	display: none;
+}
+
 #viewport-wrapper{
 	position: fixed;
 	top: 0;
@@ -131,6 +135,14 @@ a:hover{
 }
 #alert-message.warning{
 	color: #c33;
+}
+
+#status-indicator{
+	position: fixed;
+	top: 5px;
+	left: 5px;
+	width: 32px;
+	height: 32px;
 }
 
 /* modal window styles */
