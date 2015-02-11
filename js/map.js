@@ -204,6 +204,31 @@ var mapper = (function(){
             helpers.events.bind('ui-location-found', self.zoomToLocation);
 
             self.placeStopMarkers(allStops);
+            self.drawLineShapes();
+        },
+        drawLineShapes: function(){
+            $.get("/shapes/route_shapes.json", function(data){
+                var routes = JSON.parse(data);
+                for (var route in routes){
+                    for (var i = 0; i < routes[route].shapes.length; i++){
+                        self.mapShapeFromLatLonList(routes[route].shapes[i], "#" + routes[route].color);
+                    }
+                }
+            });
+        },
+        mapShapeFromLatLonList: function(latLonList, color){
+            var polyPoints = [];
+            $.each(latLonList, function(i, a){
+                var point = {lat: a.lat, lng: a.lon};
+                polyPoints.push(point);
+            });
+            var path = new google.maps.Polyline({
+                path: polyPoints,
+                strokeColor: color,
+                strokeOpacity: 1.0,
+                strokeWeight: 5
+            });
+            path.setMap(self.map);
         },
         markSelectedStopState: function(state){
             var iconUrl;
