@@ -168,6 +168,24 @@ var mapper = (function(){
                         route.route_name += ' (' + route.direction[0].trip[0].trip_headsign + ')';
 
                         $.each(route.direction, function(k, dir){
+                            var sum_prediction_delta = 0;
+                            var sum_time_between = 0;
+                            var last_trip_scheduled = -1;
+                            $.each(dir.trip, function(l, trip){
+                                sum_prediction_delta += parseInt(trip.pre_dt) - parseInt(trip.sch_arr_dt);
+                                if (last_trip_scheduled !== -1){
+                                    sum_time_between += parseInt(trip.pre_dt) - last_trip_scheduled;
+                                }
+                                else{
+                                    sum_time_between += parseInt(trip.pre_away)
+                                }
+                                last_trip_scheduled = parseInt(trip.pre_dt);
+                            });
+
+                            dir.scheduled_fucked_by = Math.round((sum_prediction_delta/dir.trip.length)/60) + " minutes";
+
+                            dir.time_between_stops = Math.round((sum_time_between/dir.trip.length)/60) + " minutes";
+
                             dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
                             dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
                         });
@@ -208,7 +226,7 @@ var mapper = (function(){
         },
         drawLineShapes: function(){
             $.get("/shapes/route_shapes.json", function(data){
-                var routes = JSON.parse(data);
+                var routes = data;
                 for (var route in routes){
                     for (var i = 0; i < routes[route].shapes.length; i++){
                         self.mapShapeFromLatLonList(routes[route].shapes[i], "#" + routes[route].color);

@@ -24,8 +24,14 @@
                         <h5>{{route_name}}</h5>
                         <div class="prediction-well">
                         {{#each direction}}
-                            <div>
+                            <div class="prediction-well">
                                 {{direction_name}}: {{predict_str}} ({{away_str}})
+                                <div class="prediction-well">
+                                    <ul>
+                                        <li>Fucked by {{scheduled_fucked_by}}</li>
+                                        <li>{{time_between_stops}} between stops</li>
+                                    </ul>
+                                </div>
                             </div>
                         {{/each}}
                         </div>
