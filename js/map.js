@@ -203,11 +203,11 @@ var mapper = (function(){
 
             helpers.events.bind('ui-location-found', self.zoomToLocation);
 
-            self.placeStopMarkers(allStops);
             self.drawLineShapes();
+            self.placeStopMarkers(allStops);
         },
         drawLineShapes: function(){
-            $.get("/shapes/route_shapes.json", function(data){
+            $.get("shapes/route_shapes.json", function(data){
                 var routes = JSON.parse(data);
                 for (var route in routes){
                     for (var i = 0; i < routes[route].shapes.length; i++){
