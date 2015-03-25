@@ -63,7 +63,7 @@ var mapper = (function(){
             self.drawLineShapes();
         },
         drawLineShapes: function(){
-            $.get("/shapes/route_shapes.json", function(data){
+            $.get("shapes/route_shapes.json", function(data){
                 var routes = JSON.parse(data);
                 for (var i = 0; i < routes.length; i++){
                     for (var j = 0; j < routes[i].shapes.length; j++){
