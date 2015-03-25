@@ -59,6 +59,10 @@ var helpers = {
     getLineColor: function(lineColor){
         switch(lineColor){
             case 'Green Line':
+            case 'Green Line B':
+            case 'Green Line C':
+            case 'Green Line D':
+            case 'Green Line E':
                 return helpers.lineColors.green;
             case 'Orange Line':
                 return helpers.lineColors.orange;
@@ -72,6 +76,10 @@ var helpers = {
     getLineIcon: function(lineColor){
         switch(lineColor){
             case 'Green Line':
+            case 'Green Line B':
+            case 'Green Line C':
+            case 'Green Line D':
+            case 'Green Line E':
                 return helpers.iconUrls.green;
             case 'Orange Line':
                 return helpers.iconUrls.orange;

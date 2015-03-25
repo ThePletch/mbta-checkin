@@ -9,12 +9,25 @@
         <!--External libraries-->
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
         <link href='http://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
-        <script src="js/google_style.js"></script>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-        <script src="js/analytics.js"></script>
+        <script src="js/lib/analytics.js"></script>
+        <script src="js/lib/handlebars-v2.0.0.js"></script>
+        <script src="js/lib/async.js"></script>
         <!--End external libraries-->
 
-        <script src="js/handlebars-v2.0.0.js"></script>
+        <!--Local data-->
+        <script src="js/data/all_stops.js"></script>
+        <script src="js/data/google_style.js"></script>
+        <script src="js/lib/helpers.js"></script>
+        <!--End local data-->
+
+        <!--Modules-->
+        <script src="js/modules/app.js"></script>
+        <script src="js/modules/mapper.js"></script>
+        <script src="js/modules/mbta.js"></script>
+        <script src="js/modules/ui.js"></script>
+        <!--End modules-->
+
         <script id="prediction-info-template" type="text/x-handlebars-template">
             <h3>{{stop_name}}</h3>
             {{#each mode}}
@@ -28,7 +41,6 @@
                                 {{direction_name}}: {{predict_str}} ({{away_str}})
                                 <div class="prediction-well">
                                     <ul>
-                                        <li>Fucked by {{scheduled_fucked_by}}</li>
                                         <li>{{time_between_stops}} between stops</li>
                                     </ul>
                                 </div>
@@ -41,9 +53,7 @@
             </ul>
         </script>
         
-        <script src="js/helpers.js"></script>
-        <script src="js/all_stops.js"></script>
-        <script src="js/map.js"></script>
+        <script src="js/main.js"></script>
         <link rel="stylesheet" href="css/picnic.css" />
         <link rel="stylesheet" href="css/site.css" />
     </head>
