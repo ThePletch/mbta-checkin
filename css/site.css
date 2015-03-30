@@ -53,9 +53,21 @@ img:not([src]){
 /* UI styles */
 
 .ui-element{
-	border: 1px solid #fff;
+	float: left;
+	background-color: #000;
 	background-color: rgba(0, 0, 0, 0.85);
-	padding: 5px;
+	width: 200px;
+}
+.ui-element button{
+	margin: 5px;
+	padding-left: 0;
+	padding-right: 0;
+	width: 190px;
+	height: 50px;
+}
+
+.ui-element .switch{
+	width: 190px;
 }
 
 .slider{
@@ -215,4 +227,47 @@ img:not([src]){
 		right: 175px;
 		font-size: 0.8em;
 	}
+}
+
+.ui-pane-wrapper{
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+.ui-viewport{
+	width: 200px;
+	height: 100%;
+	margin: 0 auto;
+	overflow: hidden;
+	border-radius: 5px;
+	position: relative;
+}
+.larrow, .rarrow{
+	position: absolute;
+	line-height: 64px;
+	font-size: 30px;
+	font-weight: bolder;
+	cursor: pointer;
+}
+.larrow{
+	left: 10px;
+}
+.rarrow{
+	right: 10px;
+}
+.rarrow.alert{
+	color: #ff0000;
+}
+.larrow.hidden, .rarrow.hidden{
+	display: none;
+}
+.ui-slider{
+	height: 100%;
+	white-space: nowrap;
+	width: 1050px;
+	transition: margin-left 0.5s ease-out;
+}
+.ui-dropdown{
+	display: none;
 }
