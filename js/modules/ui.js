@@ -29,12 +29,13 @@ var ui = (function(){
         },
         swipeHandler: (function($){
             var viewportSelector = 'slide-pane';
+            var modalSelector = 'modal-info-wrapper';
             var sliderSelector = 'ui-slider';
             var leftArrowSelector = 'larrow';
             var rightArrowSelector = 'rarrow';
             var buttonSize = 200;
             var defaultButtonIndex = 1;
-            var closeDropdownDurationMs = 300;
+            var closeDropdownDurationMs = 150;
 
             var refreshButtonPosition = function(){
                 var slideButtons = function(){
@@ -60,20 +61,32 @@ var ui = (function(){
 
             var handler = {
                 initialize: function(){
-                    var hammer = new Hammer(document.getElementById(viewportSelector));
-                    handler._hammer = hammer;
+                    var viewportSwiper = new Hammer(document.getElementById(viewportSelector));
+                    viewportSwiper.get('swipe').set({direction: Hammer.DIRECTION_ALL});
+                    var modalSwiper = new Hammer(document.getElementById(modalSelector));
+                    handler._viewport = viewportSwiper;
+                    handler._modal = modalSwiper;
                     handler.buttonCount = $('#' + sliderSelector + ' .ui-element').length;
                     handler.buttonIndex = defaultButtonIndex;
                     refreshButtonPosition();
-                    hammer.on('swipe', function(e){
-                        if (e.direction === 4){
-                            handler.swipeRight();
-                        } else if (e.direction === 2){
-                            handler.swipeLeft();
+                    viewportSwiper.on('swipeleft swiperight swipedown', function(e){
+                        switch(e.type){
+                            case 'swiperight':
+                                handler.vSwipeRight();
+                                break;
+                            case 'swipeleft':
+                                handler.vSwipeLeft();
+                                break;
+                            case 'swipedown':
+                                refreshButtonPosition();
+                                break;
                         }
                     });
-                    $("#" + rightArrowSelector).click(handler.swipeLeft);
-                    $("#" + leftArrowSelector).click(handler.swipeRight);
+                    modalSwiper.on('swiperight', function(e){
+                        handler.mSwipeRight();
+                    });
+                    $("#" + rightArrowSelector).click(handler.vSwipeLeft);
+                    $("#" + leftArrowSelector).click(handler.vSwipeRight);
                 },
                 alert: function(direction){
                     switch(direction){
@@ -93,11 +106,14 @@ var ui = (function(){
                             $('#' + rightArrowSelector).removeClass('alert');
                     }
                 },
-                swipeRight: function(){
+                mSwipeRight: function(){
+                    self.closeElement('modal-info-wrapper', 'modal-closed');
+                },
+                vSwipeRight: function(){
                     handler.buttonIndex = Math.max(handler.buttonIndex - 1, 0);
                     refreshButtonPosition();
                 },
-                swipeLeft: function(){
+                vSwipeLeft: function(){
                     handler.buttonIndex = Math.min(handler.buttonIndex + 1, handler.buttonCount - 1);
                     refreshButtonPosition();
                 }
@@ -166,11 +182,13 @@ var ui = (function(){
             });
             $('[data-close]').click(function(){
                 var target = $(this).attr('data-close');
-                $('#' + target).removeClass('visible');
-
                 var eventName = $(this).attr('data-close-event');
-                helpers.events.fire(eventName);
+                self.closeElement(target, eventName);
             });
+        },
+        closeElement: function(target, eventName){
+            $('#' + target).removeClass('visible');
+            helpers.events.fire(eventName);
         },
         displayAlert: function(alert, isWarning){
             if (self.alerts.indexOf(alert) !== -1){

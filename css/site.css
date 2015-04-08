@@ -263,7 +263,7 @@ img:not([src]){
 	height: 100%;
 	white-space: nowrap;
 	width: 1050px;
-	transition: margin-left 0.5s ease-out;
+	transition: margin-left 0.25s ease-out;
 }
 .ui-dropdown{
 	display: none;
