@@ -7,7 +7,6 @@ var mapper = (function(){
 
                 $.each(result.mode, function(i, mode){
                     $.each(mode.route, function(j, route){
-                        console.log(route);
                         route.route_name += ' (' + route.direction[0].trip[0].trip_headsign + ')';
 
                         $.each(route.direction, function(k, dir){
@@ -23,7 +22,7 @@ var mapper = (function(){
                                 last_trip_scheduled = parseInt(trip.pre_dt);
                             });
 
-                            dir.time_between_stops = Math.round((sum_time_between/dir.trip.length)/60) + "m";
+                            dir.time_between_trains = Math.round((sum_time_between/dir.trip.length)/60) + "m";
 
                             dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
                             dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
@@ -66,7 +65,7 @@ var mapper = (function(){
         },
         drawLineShapes: function(){
             $.get("shapes/route_shapes.json", function(data){
-                var routes = JSON.parse(data);
+                var routes = (typeof data == String) ? JSON.parse(data) : data;
                 for (var i = 0; i < routes.length; i++){
                     for (var j = 0; j < routes[i].shapes.length; j++){
                         self.mapShapeFromLatLonList(routes[i].shapes[j], "#" + routes[i].color);

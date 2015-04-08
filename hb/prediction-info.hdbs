@@ -1,6 +1,7 @@
 <h3>{{stop_name}}</h3>
 <ul>
 {{#each mode}}
+    <li>
     {{#each route}}
         <h5>{{route_name}}</h5>
         <div class="prediction-well">
@@ -9,12 +10,13 @@
                 {{direction_name}}: {{predict_str}} ({{away_str}})
                 <div class="prediction-well">
                     <ul>
-                        <li>{{time_between_stops}} between {{vehicle_name}}</li>
+                        <li>{{time_between_trains}} between {{vehicle_name}}</li>
                     </ul>
                 </div>
             </div>
         {{/each}}
         </div>
     {{/each}}
+    </li>
 {{/each}}
 </ul>

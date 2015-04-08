@@ -30,6 +30,10 @@ img:not([src]){
 	display: none;
 }
 
+.hidden{
+	display: none;
+}
+
 #viewport-wrapper{
 	position: fixed;
 	top: 0;
@@ -64,10 +68,6 @@ img:not([src]){
 	padding-right: 0;
 	width: 190px;
 	height: 50px;
-}
-
-.ui-element .switch{
-	width: 190px;
 }
 
 .slider{
@@ -258,9 +258,6 @@ img:not([src]){
 }
 .rarrow.alert{
 	color: #ff0000;
-}
-.larrow.hidden, .rarrow.hidden{
-	display: none;
 }
 .ui-slider{
 	height: 100%;

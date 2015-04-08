@@ -1,7 +1,9 @@
 <h3>Alerts</h3>
 <ul>
 {{#each alerts}}
-  <hr>
-  <li>{{text}}</li>
+  <li>
+    <hr>
+    {{text}}
+  </li>
 {{/each}}
 </ul>

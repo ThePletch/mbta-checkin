@@ -33,6 +33,7 @@ var ui = (function(){
             var leftArrowSelector = 'larrow';
             var rightArrowSelector = 'rarrow';
             var buttonSize = 200;
+            var defaultButtonIndex = 1;
             var closeDropdownDurationMs = 300;
 
             var refreshButtonPosition = function(){
@@ -62,7 +63,7 @@ var ui = (function(){
                     var hammer = new Hammer(document.getElementById(viewportSelector));
                     handler._hammer = hammer;
                     handler.buttonCount = $('#' + sliderSelector + ' .ui-element').length;
-                    handler.buttonIndex = 1;
+                    handler.buttonIndex = defaultButtonIndex;
                     refreshButtonPosition();
                     hammer.on('swipe', function(e){
                         if (e.direction === 4){
