@@ -1,0 +1,9 @@
+<h3>Alerts</h3>
+<ul>
+{{#each alerts}}
+  <li>
+    <hr>
+    {{text}}
+  </li>
+{{/each}}
+</ul>

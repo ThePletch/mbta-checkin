@@ -17,15 +17,16 @@ var mapper = (function(){
                                     sum_time_between += parseInt(trip.pre_dt) - last_trip_scheduled;
                                 }
                                 else{
-                                    sum_time_between += parseInt(trip.pre_away)
+                                    sum_time_between += parseInt(trip.pre_away);
                                 }
                                 last_trip_scheduled = parseInt(trip.pre_dt);
                             });
 
-                            dir.time_between_stops = Math.round((sum_time_between/dir.trip.length)/60) + " minutes";
+                            dir.time_between_trains = Math.round((sum_time_between/dir.trip.length)/60) + "m";
 
                             dir.predict_str = helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
                             dir.away_str = helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
+                            dir.vehicle_name = helpers.vehicleName(mode.mode_name);
                         });
                     });
                 });
@@ -64,7 +65,7 @@ var mapper = (function(){
         },
         drawLineShapes: function(){
             $.get("shapes/route_shapes.json", function(data){
-                var routes = JSON.parse(data);
+                var routes = (typeof data == String) ? JSON.parse(data) : data;
                 for (var i = 0; i < routes.length; i++){
                     for (var j = 0; j < routes[i].shapes.length; j++){
                         self.mapShapeFromLatLonList(routes[i].shapes[j], "#" + routes[i].color);

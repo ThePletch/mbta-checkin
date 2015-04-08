@@ -114,21 +114,54 @@ var helpers = {
     dateToTime: function(date){
         var hours = (date.getHours() - 1) % 12 + 1;
         var minutes = date.getMinutes().leftPad(2);
-        var seconds = date.getSeconds().leftPad(2);
         var amPm = (date.getHours() >= 12) ? 'pm' : 'am';
 
-        return hours + ':' + minutes + ':' + seconds + ' ' + amPm;
+        return hours + ':' + minutes + ' ' + amPm;
     },
     secondsToTimeString: function(time){
         var minutes = Math.floor(time/60);
 
         if (minutes > 0){
-            return minutes + ' mins away';
+            return minutes + ' mins';
         } else {
-            return 'Arriving';
+            return 'Arr';
         }
+    },
+    vehicleName: function(modeName){
+        var vehicleNameMap = {
+            'Subway': 'trains',
+            'Bus': 'buses',
+            'Commuter Rail': 'trains'
+        };
+
+        return vehicleNameMap[modeName];
     }
 };
+
+function Template(name, compiledCallback){
+    var self = this;
+    this.compiled = false;
+    this._template = null;
+
+    var setCompiledData = function(data){
+        self._template = data;
+        self.compiled = true;
+    };
+
+    $.get('hb/' + name + '.hdbs', function(data){
+        setCompiledData(Handlebars.compile(data));
+        compiledCallback();
+    });
+
+
+    this.render = function(context){
+        if (this.compiled){
+            return this._template(context);
+        } else {
+            return false;
+        }
+    };
+}
 
 function Stop(lat, lng, name, directions){
     this.lat = lat;
@@ -138,7 +171,7 @@ function Stop(lat, lng, name, directions){
 
     this.getIcon = function(){
         helpers.getIcon(this);
-    }
+    };
 }
 
 function Direction(name, substops){
@@ -170,7 +203,13 @@ function LiveTrain(id, line, destination, lat, lng, bearing){
 var templates = {};
 
 $(function(){
-    templates = {
-        predictionInfo: Handlebars.compile($('#prediction-info-template').html())
-    };
+    async.map(['prediction-info', 'alerts'], function(templateName, callback){
+        templates[templateName] = new Template(templateName, function(){
+            callback();
+        });
+    }, function(error, success){
+        if (!error){
+            helpers.events.fire('templates-rendered');
+        }
+    });
 });

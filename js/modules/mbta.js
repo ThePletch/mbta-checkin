@@ -30,7 +30,9 @@ var mbta = (function(){
                 if (triggerStatusEvents){
                     helpers.events.fire('mbta-api-error', thrown);
                 }
-                errorCallback(thrown);
+                if (errorCallback){
+                    errorCallback(thrown);
+                }
             }
         });
     }
@@ -48,6 +50,9 @@ var mbta = (function(){
         },
         getStopsByRoute: function(routeName, callback){
             makeApiRequest('stopsbyroute', {route: routeName}, callback);
+        },
+        getStopsByLocation: function(lat, lon, callback){
+            makeApiRequest('stopsbylocation', {lat: lat, lon: lon}, callback);
         },
         getTrainsByRoute: function(routeName, callback, errorCallback){
             makeApiRequest('vehiclesbyroute', {route: routeName}, callback, errorCallback, false);
