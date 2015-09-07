@@ -150,22 +150,36 @@ var ui = (function(){
         },
         bindButtons: function(){
             $('#zoom-location').click(self.fetchUserLocation);
-            $('#update-blue').click(function(){
-                mbta.updateVehicleLocations(routesByLine['Blue Line']);
-                helpers.events.fire('blue-updated');
+
+            var trainLines = [
+                {
+                    selector: '#update-blue',
+                    lineName: 'Blue Line',
+                    eventName: 'blue-updated'
+                },
+                {
+                    selector: '#update-green',
+                    lineName: 'Green Line',
+                    eventName: 'green-updated'
+                },
+                {
+                    selector: '#update-orange',
+                    lineName: 'Orange Line',
+                    eventName: 'orange-updated'
+                },
+                {
+                    selector: '#update-red',
+                    lineName: 'Red Line',
+                    eventName: 'red-updated'
+                }
+            ];
+            _.each(trainLines, function(line){
+                $(line.selector).click(function(){
+                    mbta.updateVehicleLocations(routesByLine[line.lineName]);
+                    helpers.events.fire(line.eventName);
+                });
             });
-            $('#update-green').click(function(){
-                mbta.updateVehicleLocations(routesByLine['Green Line']);
-                helpers.events.fire('green-updated');
-            });
-            $('#update-orange').click(function(){
-                mbta.updateVehicleLocations(routesByLine['Orange Line']);
-                helpers.events.fire('orange-updated');
-            });
-            $('#update-red').click(function(){
-                mbta.updateVehicleLocations(routesByLine['Red Line']);
-                helpers.events.fire('red-updated');
-            });
+
             $('#alerts').click(function(){
                 $('#alerts').removeClass('error');
                 self.swipeHandler.clearAlert('right');
