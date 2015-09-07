@@ -190,12 +190,12 @@ var ui = (function(){
             $('#' + target).removeClass('visible');
             helpers.events.fire(eventName);
         },
-        displayAlert: function(alert, isWarning){
-            if (self.alerts.indexOf(alert) !== -1){
+        displayAlert: function(alertText, isWarning){
+            if (self.alertAlreadyDisplayed(alertText)){
                 return false;
             }
 
-            self.alerts.unshift({text: alert});
+            self.alerts.unshift({text: alertText});
             if (self.alerts.length > maxAlertsCount){
                 self.alerts.pop();
             }
@@ -204,6 +204,9 @@ var ui = (function(){
         },
         displayAlerts: function(alerts){
             _.map(alerts, self.displayAlert);
+        },
+        alertAlreadyDisplayed: function(alertText){
+            return !!_.find(self.alerts, function(alert){ return alert.text == alertText; });
         },
         displayModal: function(templateName, dataObject){
             $(modalWrapperSelector).removeClass('visible');
