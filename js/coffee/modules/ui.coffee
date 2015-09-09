@@ -1,0 +1,209 @@
+class @Ui
+  @modal:
+    selector: '#modal-info'
+    wrapperSelector: '#modal-info-wrapper'
+    slideTransitionMs: 500
+
+  @maxAlertsCount: 10
+  @alerts: []
+  @statusIndicator:
+    selector: '#status-indicator'
+    setStatus: (status, tooltip) ->
+      newImg = switch status
+        when 'loading' then Helpers.iconUrls.statusLoading
+        when 'error' then Helpers.iconUrls.statusError
+        when 'success' then Helpers.iconUrls.statusSuccess
+        else '?'
+      $(Ui.statusIndicator.selector).attr('src', newImg)
+      $(Ui.statusIndicator.selector).attr('title', tooltip || '')
+
+  @swipeHandler:
+    viewport:
+      selector: 'slide-pane'
+    modal:
+      selector: 'modal-info-wrapper'
+    slider:
+      selector: 'ui-slider'
+    leftArrow:
+      selector: 'larrow'
+    rightArrow:
+      selector: 'rarrow'
+    button:
+      size: 200
+      defaultIndex: 1
+    closeDropdownDurationMs: 150
+
+    refreshButtonPosition: ->
+      handler = Ui.swipeHandler
+
+      slideButtons = ->
+        # Move button slider to show current button
+        $("##{handler.slider.selector}").css('margin-left',
+          -1 * handler.button.index * handler.button.size)
+        updateArrowDisplay(handler.button.index)
+
+      updateArrowDisplay = (index) ->
+        $("##{handler.leftArrow.selector}, ##{handler.rightArrow.selector}").removeClass('hidden')
+        if index == 0
+          $("##{handler.leftArrow.selector}").addClass('hidden')
+        if index == handler.button.count - 1
+          $("##{handler.rightArrow.selector}").addClass('hidden')
+
+
+      openDropdown = $("##{handler.slider.selector} .ui-dropdown.open")
+      if openDropdown.length
+        openDropdown.removeClass('open')
+        openDropdown.slideUp(handler.closeDropdownDurationMs, slideButtons)
+      else
+        slideButtons()
+
+    initialize: ->
+      handler = Ui.swipeHandler
+
+      viewportSwiper = new Hammer(document.getElementById(handler.viewport.selector))
+      viewportSwiper.get('swipe').set
+        direction: Hammer.DIRECTION_ALL
+
+      modalSwiper = new Hammer(document.getElementById(handler.modal.selector))
+
+      handler._viewport = viewportSwiper
+      handler._modal = modalSwiper
+      handler.button.count = $("##{handler.slider.selector} .ui-element").length
+      handler.button.index = handler.button.defaultIndex
+
+      handler.refreshButtonPosition()
+
+      viewportSwiper.on 'swipeleft swiperight swipedown', (e) ->
+        switch e.type
+          when 'swiperight' then handler.vSwipeRight()
+          when 'swipeleft' then handler.vSwipeLeft()
+          when 'swipedown' then refreshButtonPosition()
+
+      modalSwiper.on 'swiperight', (e) -> handler.mSwipeRight()
+      $("##{handler.rightArrow.selector}").click(handler.vSwipeLeft)
+      $("##{handler.leftArrow.selector}").click(handler.vSwipeRight)
+
+    alert: (direction) ->
+      switch direction
+        when 'left' then $("##{Ui.swipeHandler.leftArrow.selector}").addClass('alert')
+        when 'right' then $("##{Ui.swipeHandler.rightArrow.selector}").addClass('alert')
+
+    clearAlert: (direction) ->
+      switch direction
+        when 'left' then $("##{Ui.swipeHandler.leftArrow.selector}").removeClass('alert')
+        when 'right' then $("##{Ui.swipeHandler.rightArrow.selector}").removeClass('alert')
+
+    mSwipeRight: ->
+      Ui.closeElement('modal-info-wrapper', 'modal-closed')
+
+    vSwipeRight: ->
+      handler = Ui.swipeHandler
+      handler.button.index = Math.max(handler.button.index - 1, 0)
+      handler.refreshButtonPosition()
+
+    vSwipeLeft: ->
+      handler = Ui.swipeHandler
+      handler.button.index = Math.min(handler.button.index + 1, handler.button.count - 1)
+      handler.refreshButtonPosition()
+
+  @initialize: ->
+    Ui.bindButtons()
+    Ui.bindToggles()
+
+    Helpers.events.bind('mapper-mbta-alerts', Ui.displayAlerts)
+
+    Helpers.events.bind 'mapper-mbta-predictions', (predictions) ->
+      Ui.displayModal('prediction-info', predictions)
+
+    Helpers.events.bind 'mbta-api-sent', ->
+      Ui.statusIndicator.setStatus('loading')
+
+    Helpers.events.bind 'mbta-api-completed', ->
+      Ui.statusIndicator.setStatus('success')
+
+    Helpers.events.bind 'mbta-api-error', (error) ->
+      Ui.statusIndicator.setStatus('error', error)
+
+    Helpers.events.bind 'ui-new-alert', ->
+      Ui.swipeHandler.alert('right')
+      $('#alerts').addClass('error')
+
+  @bindButtons: ->
+    $('#zoom-location').click(Ui.fetchUserLocation)
+
+    trainLines = [
+      selector: '#update-blue'
+      lineName: 'Blue Line'
+      eventName: 'blue-updated'
+     ,
+      selector: '#update-green'
+      lineName: 'Green Line'
+      eventName: 'green-updated'
+     ,
+      selector: '#update-orange'
+      lineName: 'Orange Line'
+      eventName: 'orange-updated'
+     ,
+      selector: '#update-red'
+      lineName: 'Red Line'
+      eventName: 'red-updated'
+    ]
+    _.each trainLines, (line) ->
+      $(line.selector).click ->
+        Mbta.updateVehicleLocations(jsonData.routes_by_line[line.lineName])
+        Helpers.events.fire(line.eventName)
+
+    $('#alerts').click ->
+      $('#alerts').removeClass('error')
+      Ui.swipeHandler.clearAlert('right')
+      Ui.displayModal 'alerts',
+        alerts: Ui.alerts
+
+    Ui.swipeHandler.initialize()
+
+  @bindToggles: ->
+    $('[data-toggle]').click ->
+      target = $(this).attr('data-toggle')
+      jqTarget = $("##{target}")
+
+      jqTarget.slideToggle()
+      jqTarget.toggleClass('open')
+    $('[data-close]').click ->
+      jqThis = $(this)
+      target = $(this).attr('data-close')
+      eventName = $(this).attr('data-close-event')
+      Ui.closeElement(target, eventName)
+
+  @closeElement: (target, eventName) ->
+    $("##{target}").removeClass('visible')
+    Helpers.events.fire(eventName)
+
+  @displayAlert: (alertText, isWarning) ->
+    return false if Ui.alertAlreadyDisplayed(alertText)
+
+    Ui.alerts.unshift(new Alert(alertText))
+
+    if Ui.alerts.length > Ui.maxAlertsCount
+      Ui.alerts.pop()
+
+    Helpers.events.fire('ui-new-alert')
+
+  @displayAlerts: (alerts) ->
+    _.map(alerts, Ui.displayAlert)
+
+  @alertAlreadyDisplayed: (alertText) ->
+    !!_.find Ui.alerts, (alert) ->
+      alert.equals(alertText)
+
+  @displayModal: (templateName, dataObject) ->
+    $(Ui.modal.wrapperSelector).removeClass('visible')
+    setTimeout ( ->
+      templateMarkup = templates[templateName].render(dataObject)
+
+      $(Ui.modal.selector).html(templateMarkup)
+      $(Ui.modal.wrapperSelector).addClass('visible')
+    ), Ui.modal.slideTransitionMs
+
+  @fetchUserLocation: ->
+    App.getUserLocation (location) ->
+      Helpers.events.fire('ui-location-found', location)
