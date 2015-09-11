@@ -1,7 +1,8 @@
 $(function(){
-  helpers.events.bind('templates-rendered', function(){
-    mapper.initialize();
-    mbta.initialize();
-    ui.initialize();
+  Helpers.events.bind('prep-complete', function(){
+    Mapper.initialize();
+    Mbta.initialize();
+    Ui.initialize();
+    console.log(jsonData);
   });
 });
