@@ -26,6 +26,7 @@ class @Mbta
         callbacks.error?(thrown)
 
   @initialize: ->
+  # TODO these should return CS classes to clean up associated code a bunch
   @getAllRoutes: (callback) ->
     Mbta.makeApiRequest('routes', null, callback)
   @getRouteByStop: (stopName, callbacks) ->

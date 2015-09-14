@@ -88,6 +88,12 @@ class @Helpers
     minutes = Math.floor(time/60)
 
     if minutes > 0 then minutes + ' mins' else 'Arr'
+  @timeBetweenTrains: (deltaSec, trainCount, vehicleName) ->
+    if trainCount is 1
+      "No #{vehicleName} after this"
+    else
+      minutes = Math.floor((deltaSec/60)/trainCount)
+      "#{minutes}m between #{vehicleName}"
   @vehicleName: (modeName) ->
     vehicleNameMap =
       'Subway': 'trains'
@@ -167,18 +173,16 @@ $ ->
     async.map ['all_stops', 'google_style', 'route_coordinates', 'routes_by_line'],
       (jsonName, callback) ->
         $.get "js/json/#{jsonName}.json", (data) ->
-          window.jsonData[jsonName] = data
+          window.jsonData[jsonName] = if typeof data is 'object' then data else JSON.parse(data)
           callback()
       (error, success) ->
         if error
-          console.log("Shiiiiiit", error)
           loadedCallback("FATAL: Could not load JSON. #{error}")
         else
           Helpers.events.fire('json-loaded')
           loadedCallback()
   async.map [loadJson, compileTemplates],
     (prepFunction, callback) ->
-      console.log(prepFunction)
       prepFunction(callback)
     (error, success) ->
       if error
