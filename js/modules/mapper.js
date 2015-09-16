@@ -19,32 +19,59 @@
         Mapper.markStopSelected(marker);
         return Mbta.getNextTrainsToStop(marker.id, {
           success: function(result) {
+            var dir, lastTrip, mode, nextTrip, predictionData, route;
             Helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map(function(a) {
               return a.header_text;
             }));
-            $.each(result.mode, function(i, mode) {
-              return $.each(mode.route, function(j, route) {
-                route.route_name += " (" + route.direction[0].trip[0].trip_headsign + ")";
-                return $.each(route.direction, function(k, dir) {
-                  var last_trip_scheduled, sum_time_between;
-                  sum_time_between = 0;
-                  last_trip_scheduled = -1;
-                  $.each(dir.trip, function(l, trip) {
-                    if (last_trip_scheduled !== -1) {
-                      sum_time_between += parseInt(trip.pre_dt) - last_trip_scheduled;
-                    } else {
-                      sum_time_between += parseInt(trip.pre_away);
-                    }
-                    return last_trip_scheduled = parseInt(trip.pre_dt);
+            predictionData = {
+              name: result.stop_name,
+              modes: (function() {
+                var i, len, ref, results;
+                ref = result.mode;
+                results = [];
+                for (i = 0, len = ref.length; i < len; i++) {
+                  mode = ref[i];
+                  results.push({
+                    routes: (function() {
+                      var j, len1, ref1, results1;
+                      ref1 = mode.route;
+                      results1 = [];
+                      for (j = 0, len1 = ref1.length; j < len1; j++) {
+                        route = ref1[j];
+                        results1.push({
+                          routeName: route.route_name + " (" + route.direction[0].trip[0].trip_headsign + ")",
+                          directions: (function() {
+                            var k, len2, ref2, results2;
+                            ref2 = route.direction;
+                            results2 = [];
+                            for (k = 0, len2 = ref2.length; k < len2; k++) {
+                              dir = ref2[k];
+                              nextTrip = _.min(dir.trip, function(trip) {
+                                return parseInt(trip.pre_dt);
+                              });
+                              lastTrip = _.max(dir.trip, function(trip) {
+                                return parseInt(trip.pre_dt);
+                              });
+                              results2.push({
+                                name: dir.direction_name,
+                                nextTrip: nextTrip,
+                                timeBetweenTrains: Helpers.timeBetweenTrains(parseInt(lastTrip.pre_dt) - parseInt(nextTrip.pre_dt), dir.trip.length, Helpers.vehicleName(mode.mode_name)),
+                                predictStr: Helpers.dateToTime(new Date(parseInt(nextTrip.pre_dt) * 1000)),
+                                awayStr: Helpers.secondsToTimeString(parseInt(nextTrip.pre_away))
+                              });
+                            }
+                            return results2;
+                          })()
+                        });
+                      }
+                      return results1;
+                    })()
                   });
-                  dir.time_between_trains = Math.round((sum_time_between / dir.trip.length) / 60) + "m";
-                  dir.predict_str = Helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
-                  dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
-                  return dir.vehicle_name = Helpers.vehicleName(mode.mode_name);
-                });
-              });
-            });
-            Helpers.events.fire('mapper-mbta-predictions', result);
+                }
+                return results;
+              })()
+            };
+            Helpers.events.fire('mapper-mbta-predictions', predictionData);
             return Mapper.markSelectedStopState('success');
           },
           error: function(error) {
@@ -70,17 +97,17 @@
 
     Mapper.drawLineShapes = function() {
       return $.get("shapes/route_shapes.json", function(data) {
-        var len, m, results, route, routes, shape;
-        routes = typeof data === String ? JSON.parse(data) : data;
+        var i, len, results, route, routes, shape;
+        routes = typeof data === 'string' ? JSON.parse(data) : data;
         results = [];
-        for (m = 0, len = routes.length; m < len; m++) {
-          route = routes[m];
+        for (i = 0, len = routes.length; i < len; i++) {
+          route = routes[i];
           results.push((function() {
-            var len1, n, ref, results1;
+            var j, len1, ref, results1;
             ref = route.shapes;
             results1 = [];
-            for (n = 0, len1 = ref.length; n < len1; n++) {
-              shape = ref[n];
+            for (j = 0, len1 = ref.length; j < len1; j++) {
+              shape = ref[j];
               results1.push(Mapper.mapShapeFromLatLonList(shape, "#" + route.color));
             }
             return results1;
@@ -160,18 +187,25 @@
     };
 
     Mapper.placeStopMarkers = function(markers, extractor) {
+      var i, len, marker, results;
       if (extractor == null) {
         extractor = function(marker) {
           return marker;
         };
       }
-      return $.each(markers, function(i, marker) {
-        return Mapper.placeStopMarker(extractor(marker));
-      });
+      results = [];
+      for (i = 0, len = markers.length; i < len; i++) {
+        marker = markers[i];
+        results.push(Mapper.placeStopMarker(extractor(marker)));
+      }
+      return results;
     };
 
     Mapper.removeSelected = function() {
-      Mapper.selected.setMap(null);
+      var ref;
+      if ((ref = Mapper.selected) != null) {
+        ref.setMap(null);
+      }
       return Mapper.selected = null;
     };
 

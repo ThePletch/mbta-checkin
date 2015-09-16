@@ -1,0 +1,11 @@
+.DS_Store
+.git/*
+.gitignore
+.s3ignore
+.accesskeyid
+.secretaccesskey
+*.bash
+*.coffee
+*.bak
+node_modules/*
+README.md

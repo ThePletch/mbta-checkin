@@ -1,1 +1,4 @@
-gtfs/*
+.accesskeyid
+.secretaccesskey
+.DS_Store
+node_modules/*

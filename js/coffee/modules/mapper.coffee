@@ -13,27 +13,27 @@ class @Mapper
         success: (result) ->
           Helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map((a) -> a.header_text))
 
-          $.each result.mode, (i, mode) ->
-            $.each mode.route, (j, route) ->
-              route.route_name += " (#{route.direction[0].trip[0].trip_headsign})"
+          predictionData =
+            name: result.stop_name
+            modes: for mode in result.mode
+              routes: for route in mode.route
+                routeName: "#{route.route_name} (#{route.direction[0].trip[0].trip_headsign})"
+                directions: for dir in route.direction
+                  nextTrip = _.min(dir.trip, (trip) -> parseInt(trip.pre_dt))
+                  lastTrip = _.max(dir.trip, (trip) -> parseInt(trip.pre_dt))
 
-              $.each route.direction, (k, dir) ->
-                sum_time_between = 0
-                last_trip_scheduled = -1
-                $.each dir.trip, (l, trip) ->
-                  if last_trip_scheduled != -1
-                    sum_time_between += parseInt(trip.pre_dt) - last_trip_scheduled
-                  else
-                    sum_time_between += parseInt(trip.pre_away)
-                  last_trip_scheduled = parseInt(trip.pre_dt)
+                  {
+                    name: dir.direction_name
+                    nextTrip: nextTrip
+                    timeBetweenTrains: Helpers.timeBetweenTrains(
+                      parseInt(lastTrip.pre_dt) - parseInt(nextTrip.pre_dt),
+                      dir.trip.length,
+                      Helpers.vehicleName(mode.mode_name))
+                    predictStr: Helpers.dateToTime(new Date(parseInt(nextTrip.pre_dt) * 1000))
+                    awayStr: Helpers.secondsToTimeString(parseInt(nextTrip.pre_away))
+                  }
 
-                dir.time_between_trains = Math.round((sum_time_between/dir.trip.length)/60) + "m"
-
-                dir.predict_str = Helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000))
-                dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away))
-                dir.vehicle_name = Helpers.vehicleName(mode.mode_name)
-
-          Helpers.events.fire('mapper-mbta-predictions', result)
+          Helpers.events.fire('mapper-mbta-predictions', predictionData)
 
           Mapper.markSelectedStopState('success')
         error: (error) ->
@@ -56,7 +56,7 @@ class @Mapper
 
   @drawLineShapes: ->
     $.get "shapes/route_shapes.json", (data) ->
-      routes = if typeof data is String then JSON.parse(data) else data
+      routes = if typeof data is 'string' then JSON.parse(data) else data
       for route in routes
         for shape in route.shapes
           Mapper.mapShapeFromLatLonList(shape, "##{route.color}")
@@ -112,10 +112,10 @@ class @Mapper
   @placeStopMarkers: (markers, extractor) ->
     extractor ?= (marker) -> marker # noop function
 
-    $.each(markers, (i, marker) -> Mapper.placeStopMarker(extractor(marker)))
+    Mapper.placeStopMarker(extractor(marker)) for marker in markers
 
   @removeSelected: ->
-    Mapper.selected.setMap(null)
+    Mapper.selected?.setMap(null)
     Mapper.selected = null
 
   @zoomToLocation: (location) ->

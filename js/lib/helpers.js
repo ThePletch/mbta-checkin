@@ -28,7 +28,6 @@
       fire: function(eventName, params) {
         var func, i, len1, ref, results, self;
         self = Helpers.events;
-        console.log("Firing " + eventName);
         if (self._ev[eventName] == null) {
           return;
         }
@@ -137,6 +136,16 @@
         return minutes + ' mins';
       } else {
         return 'Arr';
+      }
+    };
+
+    Helpers.timeBetweenTrains = function(deltaSec, trainCount, vehicleName) {
+      var minutes;
+      if (trainCount === 1) {
+        return "No " + vehicleName + " after this";
+      } else {
+        minutes = Math.floor((deltaSec / 60) / trainCount);
+        return minutes + "m between " + vehicleName;
       }
     };
 
@@ -292,12 +301,11 @@
     loadJson = function(loadedCallback) {
       return async.map(['all_stops', 'google_style', 'route_coordinates', 'routes_by_line'], function(jsonName, callback) {
         return $.get("js/json/" + jsonName + ".json", function(data) {
-          window.jsonData[jsonName] = data;
+          window.jsonData[jsonName] = typeof data === 'object' ? data : JSON.parse(data);
           return callback();
         });
       }, function(error, success) {
         if (error) {
-          console.log("Shiiiiiit", error);
           return loadedCallback("FATAL: Could not load JSON. " + error);
         } else {
           Helpers.events.fire('json-loaded');
@@ -306,7 +314,6 @@
       });
     };
     return async.map([loadJson, compileTemplates], function(prepFunction, callback) {
-      console.log(prepFunction);
       return prepFunction(callback);
     }, function(error, success) {
       if (error) {
