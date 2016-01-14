@@ -174,6 +174,11 @@ class @Ui
       eventName = $(this).attr('data-close-event')
       Ui.closeElement(target, eventName)
 
+  @bindModalButtons: ->
+    $('.track-route').click ->
+      routeId = $(this).attr('data-route-id')
+      Mbta.updateVehicleLocations([routeId])
+
   @closeElement: (target, eventName) ->
     $("##{target}").removeClass('visible')
     Helpers.events.fire(eventName)
@@ -202,6 +207,7 @@ class @Ui
 
       $(Ui.modal.selector).html(templateMarkup)
       $(Ui.modal.wrapperSelector).addClass('visible')
+      Ui.bindModalButtons()
     ), Ui.modal.slideTransitionMs
 
   @fetchUserLocation: ->

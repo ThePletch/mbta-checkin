@@ -218,6 +218,14 @@
       });
     };
 
+    Ui.bindModalButtons = function() {
+      return $('.track-route').click(function() {
+        var routeId;
+        routeId = $(this).attr('data-route-id');
+        return Mbta.updateVehicleLocations([routeId]);
+      });
+    };
+
     Ui.closeElement = function(target, eventName) {
       $("#" + target).removeClass('visible');
       return Helpers.events.fire(eventName);
@@ -250,7 +258,8 @@
         var templateMarkup;
         templateMarkup = templates[templateName].render(dataObject);
         $(Ui.modal.selector).html(templateMarkup);
-        return $(Ui.modal.wrapperSelector).addClass('visible');
+        $(Ui.modal.wrapperSelector).addClass('visible');
+        return Ui.bindModalButtons();
       }), Ui.modal.slideTransitionMs);
     };
 

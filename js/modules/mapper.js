@@ -23,6 +23,7 @@
               return a.header_text;
             }));
             $.each(result.mode, function(i, mode) {
+              mode.vehicle_name = Helpers.vehicleName(mode.mode_name);
               return $.each(mode.route, function(j, route) {
                 route.route_name += " (" + route.direction[0].trip[0].trip_headsign + ")";
                 return $.each(route.direction, function(k, dir) {
@@ -39,8 +40,7 @@
                   });
                   dir.time_between_trains = Math.round((sum_time_between / dir.trip.length) / 60) + "m";
                   dir.predict_str = Helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
-                  dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
-                  return dir.vehicle_name = Helpers.vehicleName(mode.mode_name);
+                  return dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
                 });
               });
             });
@@ -69,22 +69,28 @@
     };
 
     Mapper.drawLineShapes = function() {
-      return $.get("shapes/route_shapes.json", function(data) {
-        var len, m, results, route, routes, shape;
-        routes = typeof data === String ? JSON.parse(data) : data;
+      return $.get("shapes/route_shapes.json", function(routes) {
+        var len, m, ref, results, route, shape;
+        if ((ref = typeof routes) === String || ref === 'string') {
+          routes = JSON.parse(routes);
+        }
         results = [];
         for (m = 0, len = routes.length; m < len; m++) {
           route = routes[m];
-          results.push((function() {
-            var len1, n, ref, results1;
-            ref = route.shapes;
-            results1 = [];
-            for (n = 0, len1 = ref.length; n < len1; n++) {
-              shape = ref[n];
-              results1.push(Mapper.mapShapeFromLatLonList(shape, "#" + route.color));
-            }
-            return results1;
-          })());
+          if (route.shapes) {
+            results.push((function() {
+              var len1, n, ref1, results1;
+              ref1 = route.shapes;
+              results1 = [];
+              for (n = 0, len1 = ref1.length; n < len1; n++) {
+                shape = ref1[n];
+                results1.push(Mapper.mapShapeFromLatLonList(shape, "#" + route.color));
+              }
+              return results1;
+            })());
+          } else {
+            results.push(console.log(route));
+          }
         }
         return results;
       });

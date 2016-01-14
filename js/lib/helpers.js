@@ -28,7 +28,6 @@
       fire: function(eventName, params) {
         var func, i, len1, ref, results, self;
         self = Helpers.events;
-        console.log("Firing " + eventName);
         if (self._ev[eventName] == null) {
           return;
         }
@@ -64,7 +63,8 @@
       red: '#ff0000',
       green: '#00ff00',
       blue: '#0077cc',
-      orange: '#ff8800'
+      orange: '#ff8800',
+      bus: '#ffd700'
     };
 
     Helpers.getLineColor = function(lineColor) {
@@ -82,6 +82,8 @@
         case 'Red Line':
         case 'Mattapan Trolley':
           return Helpers.lineColors.red;
+        default:
+          return Helpers.lineColors.bus;
       }
     };
 
@@ -292,6 +294,10 @@
     loadJson = function(loadedCallback) {
       return async.map(['all_stops', 'google_style', 'route_coordinates', 'routes_by_line'], function(jsonName, callback) {
         return $.get("js/json/" + jsonName + ".json", function(data) {
+          var ref;
+          if ((ref = typeof data) === String || ref === 'string') {
+            data = JSON.parse(data);
+          }
           window.jsonData[jsonName] = data;
           return callback();
         });

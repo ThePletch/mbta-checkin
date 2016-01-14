@@ -14,6 +14,7 @@ class @Mapper
           Helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map((a) -> a.header_text))
 
           $.each result.mode, (i, mode) ->
+            mode.vehicle_name = Helpers.vehicleName(mode.mode_name)
             $.each mode.route, (j, route) ->
               route.route_name += " (#{route.direction[0].trip[0].trip_headsign})"
 
@@ -31,7 +32,6 @@ class @Mapper
 
                 dir.predict_str = Helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000))
                 dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away))
-                dir.vehicle_name = Helpers.vehicleName(mode.mode_name)
 
           Helpers.events.fire('mapper-mbta-predictions', result)
 
@@ -55,11 +55,14 @@ class @Mapper
     Mapper.drawLineShapes()
 
   @drawLineShapes: ->
-    $.get "shapes/route_shapes.json", (data) ->
-      routes = if typeof data is String then JSON.parse(data) else data
+    $.get "shapes/route_shapes.json", (routes) ->
+      routes = JSON.parse(routes) if typeof routes in [String, 'string']
       for route in routes
-        for shape in route.shapes
-          Mapper.mapShapeFromLatLonList(shape, "##{route.color}")
+        if route.shapes
+          for shape in route.shapes
+            Mapper.mapShapeFromLatLonList(shape, "##{route.color}")
+        else
+          console.log(route)
 
   @mapShapeFromLatLonList: (latLonList, color) ->
     polyPoints = _.map(latLonList, (point) -> {lat: point.lat, lng: point.lon} )

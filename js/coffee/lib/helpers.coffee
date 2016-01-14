@@ -43,6 +43,7 @@ class @Helpers
     green: '#00ff00'
     blue: '#0077cc'
     orange: '#ff8800'
+    bus: '#ffd700'
   @getLineColor: (lineColor) ->
     switch lineColor
       when 'Green Line', 'Green Line B', 'Green Line C', 'Green Line D', 'Green Line E'
@@ -53,6 +54,8 @@ class @Helpers
         return Helpers.lineColors.blue
       when 'Red Line', 'Mattapan Trolley'
         return Helpers.lineColors.red
+      else
+        return Helpers.lineColors.bus
   @getLineIcon: (lineColor) ->
     switch lineColor
       when 'Green Line', 'Green Line B', 'Green Line C', 'Green Line D', 'Green Line E'
@@ -167,6 +170,7 @@ $ ->
     async.map ['all_stops', 'google_style', 'route_coordinates', 'routes_by_line'],
       (jsonName, callback) ->
         $.get "js/json/#{jsonName}.json", (data) ->
+          data = JSON.parse(data) if typeof data in [String, 'string']
           window.jsonData[jsonName] = data
           callback()
       (error, success) ->

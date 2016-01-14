@@ -3,14 +3,18 @@
 {{#each mode}}
     <li>
     {{#each route}}
-        <h5>{{route_name}}</h5>
+        <h5>
+            <span>{{route_name}}</span>
+            <button class="track-route"
+                 data-route-id="{{route_id}}">View {{../vehicle_name}}</button>
+        </h5>
         <div class="prediction-well">
         {{#each direction}}
             <div class="prediction-well">
                 {{direction_name}}: {{predict_str}} ({{away_str}})
                 <div class="prediction-well">
                     <ul>
-                        <li>{{time_between_trains}} between {{vehicle_name}}</li>
+                        <li>{{time_between_trains}} between {{../../vehicle_name}}</li>
                     </ul>
                 </div>
             </div>
