@@ -1,6 +1,8 @@
 class @Mbta
   @apiUrl: 'http://realtime.mbta.com/developer/api/v2/'
   @allStops: jsonData.all_stops
+  @userLocMarker: null
+  @localStops: []
   @trainLocations: {}
   # todo replace this with superagent
   @makeApiRequest: (path, additionalParams, callbacks, triggerStatusEvents) ->
@@ -34,6 +36,14 @@ class @Mbta
     Mbta.makeApiRequest('stopsbyroute', {route: routeName}, callbacks)
   @getStopsByLocation: (lat, lon, callbacks) ->
     Mbta.makeApiRequest('stopsbylocation', {lat: lat, lon: lon}, callbacks)
+  @getNearbyStops: (coords, callbacks) ->
+    Mbta.getStopsByLocation coords.latitude, coords.longitude,
+      success: (result) ->
+        callbacks.success(result.stop.filter (stop) ->
+          !(stop.parent_station or Number.isNaN(parseInt(stop.stop_id)))
+        .map (stop) ->
+          new Stop(stop.stop_id, stop.stop_name, stop.stop_lat, stop.stop_lon, "Bus"))
+      error: callbacks.error
   @getTrainsByRoute: (routeName, callbacks) ->
     Mbta.makeApiRequest('vehiclesbyroute', {route: routeName}, callbacks, false)
   @getNextTrainsToStop: (stop, callbacks) ->
@@ -64,7 +74,7 @@ class @Mbta
             atLeastOneSucceeded = true
             callback()
           error: ->
-            console.log("DEBUG: Failed to fetch trains for route #{routeToCheck}.")
+            console.warn("Failed to fetch trains for route #{routeToCheck}.")
             callback()
       ->
         # remove all trains

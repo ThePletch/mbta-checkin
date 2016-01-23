@@ -13,6 +13,11 @@ class @Mapper
         success: (result) ->
           Helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map((a) -> a.header_text))
 
+          unless result.mode
+            Mapper.markSelectedStopState('error')
+            console.warn("No predictions found for stop #{result.stop_name} (ID #{result.stop_id})")
+            return
+
           $.each result.mode, (i, mode) ->
             mode.vehicle_name = Helpers.vehicleName(mode.mode_name)
             $.each mode.route, (j, route) ->
@@ -49,7 +54,16 @@ class @Mapper
 
     Helpers.events.bind 'modal-closed', Mapper.removeSelected
 
-    Helpers.events.bind 'ui-location-found', Mapper.zoomToLocation
+    Helpers.events.bind 'ui-location-found', (coords) ->
+      Mbta.userLocMarker?.setMap(null)
+      Mbta.userLocMarker = Mapper.placeLocationMarker(coords)
+      Mapper.zoomToLocation(coords)
+      Mbta.localStops.forEach((stop) -> stop.destroy())
+      Mbta.getNearbyStops coords,
+        success: (stops) ->
+          Mbta.localStops = stops
+          stops.forEach((stop) -> stop.render())
+        error: console.error
 
     Mapper.placeStopMarkers(jsonData.all_stops)
     Mapper.drawLineShapes()
@@ -62,7 +76,7 @@ class @Mapper
           for shape in route.shapes
             Mapper.mapShapeFromLatLonList(shape, "##{route.color}")
         else
-          console.log(route)
+          console.warn("No shapes in route:", route)
 
   @mapShapeFromLatLonList: (latLonList, color) ->
     polyPoints = _.map(latLonList, (point) -> {lat: point.lat, lng: point.lon} )
@@ -92,6 +106,13 @@ class @Mapper
         url: Helpers.iconUrls.selected
         scaledSize: new google.maps.Size(33, 33)
         anchor: new google.maps.Point(16, 16)
+
+  @placeLocationMarker: (coords) ->
+    new google.maps.Marker
+      position: new google.maps.LatLng(coords.latitude, coords.longitude)
+      map: Mapper.map
+      title: "Location"
+      icon: Helpers.getIcon(line: "Location")
 
   @placeVehicleMarker: (marker) ->
     new google.maps.Marker

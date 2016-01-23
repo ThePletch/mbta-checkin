@@ -3,6 +3,5 @@ $(function(){
     Mapper.initialize();
     Mbta.initialize();
     Ui.initialize();
-    console.log(jsonData);
   });
 });

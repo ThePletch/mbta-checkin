@@ -25,11 +25,8 @@ class @Helpers
     green: 'img/green_line.png'
     blue: 'img/blue_line.png'
     orange: 'img/orange_line.png'
-    redGreen: 'img/red_green_line.png'
-    redOrange: 'img/red_orange_line.png'
-    orangeBlue: ''
-    blueGreen: 'img/green_blue_line.png'
-    orangeGreen: 'img/orange_green_line.png'
+    yellow: 'img/yellow_line.png'
+    locationReticle: 'img/selected_blue.png'
     selected: 'img/selected.png'
     selectedError: 'img/selected_error.png',
     selectedSuccess: 'img/selected_success.png'
@@ -66,6 +63,10 @@ class @Helpers
         return Helpers.iconUrls.blue
       when 'Red Line', 'Mattapan Trolley'
         return Helpers.iconUrls.red
+      when 'Location'
+        return Helpers.iconUrls.locationReticle
+      else
+        return Helpers.iconUrls.yellow
   @getLiveIcon: (train) ->
     return {
       path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
@@ -116,22 +117,15 @@ class @Template
   render: (context) ->
     return @compiled && @_template(context)
 
-class @Stop
-  constructor: (@lat, @lng, @name, directions) ->
-    @directions = directions || {}
-
-  getIcon: ->
-    Helpers.getIcon(this)
-
-class @Direction
-  constructor: (@name, substops) ->
-    @substops = substops || []
-
-class @Substop
-  constructor: (@id, @name, @line) ->
-
 class @Train
   constructor: (@name, @eta, @etaString) ->
+
+class @Stop
+  constructor: (@id, @name, @lat, @lng, @line) ->
+  render: ->
+    @marker = Mapper.placeStopMarker(this)
+  destroy: ->
+    @marker?.setMap(null)
 
 class @LiveTrain
   constructor: (@id, @line, @destination, lat, lng, bearing) ->
@@ -175,14 +169,13 @@ $ ->
           callback()
       (error, success) ->
         if error
-          console.log("Shiiiiiit", error)
+          console.error(error)
           loadedCallback("FATAL: Could not load JSON. #{error}")
         else
           Helpers.events.fire('json-loaded')
           loadedCallback()
   async.map [loadJson, compileTemplates],
     (prepFunction, callback) ->
-      console.log(prepFunction)
       prepFunction(callback)
     (error, success) ->
       if error

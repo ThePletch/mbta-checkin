@@ -3,6 +3,7 @@ class @App
   @getUserLocation: (callback) ->
     if navigator.geolocation
       Helpers.events.fire('mbta-api-sent')
+      Mbta.userLocMarker?.setMap(null)
       navigator.geolocation.getCurrentPosition(
         (pos) ->
           Helpers.events.fire('mbta-api-completed')

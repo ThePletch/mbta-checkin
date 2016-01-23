@@ -1,1 +1,3 @@
 gtfs/*
+js/lib/*.js
+js/modules/*.js
