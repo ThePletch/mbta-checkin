@@ -5,6 +5,12 @@
 
     Mapper.map = null;
 
+    Mapper.defaultStops = [];
+
+    Mapper.defaultRouteIds = ["741", "742", "746", "749", "751", "Green-B", "Green-C", "Green-D", "Green-E", "Red", "Blue", "Orange"];
+
+    Mapper.defaultStopIds = [];
+
     Mapper.center = {
       lat: 42.358,
       lng: -71.064
@@ -14,43 +20,48 @@
 
     Mapper.zoom = 14;
 
-    Mapper.click = {
-      stopMarker: function(marker) {
-        Mapper.markStopSelected(marker);
-        return Mbta.getNextTrainsToStop(marker.id, {
-          success: function(result) {
-            Helpers.events.fire('mapper-mbta-alerts', result.alert_headers.map(function(a) {
-              return a.header_text;
-            }));
-            $.each(result.mode, function(i, mode) {
-              mode.vehicle_name = Helpers.vehicleName(mode.mode_name);
-              return $.each(mode.route, function(j, route) {
-                route.route_name += " (" + route.direction[0].trip[0].trip_headsign + ")";
-                return $.each(route.direction, function(k, dir) {
-                  var last_trip_scheduled, sum_time_between;
-                  sum_time_between = 0;
-                  last_trip_scheduled = -1;
-                  $.each(dir.trip, function(l, trip) {
-                    if (last_trip_scheduled !== -1) {
-                      sum_time_between += parseInt(trip.pre_dt) - last_trip_scheduled;
-                    } else {
-                      sum_time_between += parseInt(trip.pre_away);
-                    }
-                    return last_trip_scheduled = parseInt(trip.pre_dt);
-                  });
-                  dir.time_between_trains = Math.round((sum_time_between / dir.trip.length) / 60) + "m";
-                  dir.predict_str = Helpers.dateToTime(new Date(parseInt(dir.trip[0].pre_dt) * 1000));
-                  return dir.away_str = Helpers.secondsToTimeString(parseInt(dir.trip[0].pre_away));
-                });
-              });
-            });
-            Helpers.events.fire('mapper-mbta-predictions', result);
-            return Mapper.markSelectedStopState('success');
-          },
-          error: function(error) {
-            return Mapper.markSelectedStopState('error');
+    Mapper.featureManager = {
+      _features: {},
+      addFeature: function(key, feature) {
+        Mapper.featureManager.destroyFeature(key);
+        Mapper.featureManager._features[key] = feature;
+        return Mapper.featureManager.renderFeature(key);
+      },
+      getFeature: function(key) {
+        return Mapper.featureManager._features[key];
+      },
+      destroyFeature: function(key) {
+        var feature, j, len, results, subfeature;
+        if (!Mapper.featureManager._features[key]) {
+          return;
+        }
+        feature = Mapper.featureManager._features[key];
+        if (feature.constructor === Array) {
+          console.log("Destroying " + feature.length + " objects");
+          results = [];
+          for (j = 0, len = feature.length; j < len; j++) {
+            subfeature = feature[j];
+            results.push(subfeature.destroy());
           }
-        });
+          return results;
+        } else {
+          return feature.destroy();
+        }
+      },
+      renderFeature: function(key) {
+        var feature;
+        if (!Mapper.featureManager._features[key]) {
+          return;
+        }
+        feature = Mapper.featureManager._features[key];
+        if (feature.constructor === Array) {
+          console.log("Rendering " + feature.length + " objects");
+          return feature.forEach(function(subfeature) {
+            return subfeature.render();
+          });
+        } else {
+          return feature.render();
+        }
       }
     };
 
@@ -62,55 +73,35 @@
         backgroundColor: '#2a2a2a',
         disableDefaultUI: true
       });
+      Mapper.featureManager.addFeature('defaultRoutes', Mapper.defaultRouteIds.map(function(routeId) {
+        var route;
+        route = jsonData.routes[routeId];
+        return new Route(route.id, route.name, route.mode);
+      }));
+      Mapper.defaultStopIds = jsonData.default_stops;
+      Mapper.featureManager.addFeature('defaultStops', Mapper.defaultStopIds.map(function(stopId) {
+        var stop;
+        stop = jsonData.stops[stopId];
+        return new Stop(stop.id, stop.name, stop.lat, stop.lon, "Bus");
+      }));
       Helpers.events.bind('modal-closed', Mapper.removeSelected);
-      Helpers.events.bind('ui-location-found', Mapper.zoomToLocation);
-      Mapper.placeStopMarkers(jsonData.all_stops);
-      return Mapper.drawLineShapes();
-    };
-
-    Mapper.drawLineShapes = function() {
-      return $.get("shapes/route_shapes.json", function(routes) {
-        var len, m, ref, results, route, shape;
-        if ((ref = typeof routes) === String || ref === 'string') {
-          routes = JSON.parse(routes);
-        }
-        results = [];
-        for (m = 0, len = routes.length; m < len; m++) {
-          route = routes[m];
-          if (route.shapes) {
-            results.push((function() {
-              var len1, n, ref1, results1;
-              ref1 = route.shapes;
-              results1 = [];
-              for (n = 0, len1 = ref1.length; n < len1; n++) {
-                shape = ref1[n];
-                results1.push(Mapper.mapShapeFromLatLonList(shape, "#" + route.color));
-              }
-              return results1;
-            })());
-          } else {
-            results.push(console.log(route));
-          }
-        }
-        return results;
+      Helpers.events.bind('ui-location-found', function(coords) {
+        Mapper.featureManager.addFeature('userLocation', new LocationMarker(coords));
+        Mapper.zoomToLocation(coords);
+        return Mbta.getNearbyStops(coords, {
+          success: function(stops) {
+            return Mapper.featureManager.addFeature('localStops', stops);
+          },
+          error: console.error
+        });
       });
-    };
-
-    Mapper.mapShapeFromLatLonList = function(latLonList, color) {
-      var path, polyPoints;
-      polyPoints = _.map(latLonList, function(point) {
-        return {
-          lat: point.lat,
-          lng: point.lon
-        };
+      Helpers.events.bind('stop-selected', Mapper.markStopSelected);
+      Helpers.events.bind('stop-fetchdata-success', function() {
+        return Mapper.markSelectedStopState('success');
       });
-      path = new google.maps.Polyline({
-        path: polyPoints,
-        strokeColor: color,
-        strokeOpacity: 1.0,
-        strokeWeight: 5
+      return Helpers.events.bind('stop-fetchdata-error', function() {
+        return Mapper.markSelectedStopState('error');
       });
-      return path.setMap(Mapper.map);
     };
 
     Mapper.markSelectedStopState = function(state) {
@@ -142,23 +133,28 @@
       });
     };
 
-    Mapper.placeVehicleMarker = function(marker) {
+    Mapper.placeMarker = function(lat, lon, title, icon) {
       return new google.maps.Marker({
-        position: new google.maps.LatLng(marker.lat, marker.lng),
+        position: new google.maps.LatLng(lat, lon),
         map: Mapper.map,
-        title: marker.destination,
-        icon: marker.icon || Helpers.getLiveIcon(marker)
+        title: title,
+        icon: icon
       });
+    };
+
+    Mapper.placeLocationMarker = function(coords) {
+      return Mapper.placeMarker(coords.latitude, coords.longitude, "Location", Helpers.getIcon({
+        line: "Location"
+      }));
+    };
+
+    Mapper.placeVehicleMarker = function(marker) {
+      return Mapper.placeMarker(marker.lat, marker.lng, marker.destination, marker.icon || Helpers.getLiveIcon(marker));
     };
 
     Mapper.placeStopMarker = function(marker) {
       var gMarker;
-      gMarker = new google.maps.Marker({
-        position: new google.maps.LatLng(marker.lat, marker.lng),
-        map: Mapper.map,
-        title: marker.name,
-        icon: marker.icon || Helpers.getIcon(marker)
-      });
+      gMarker = Mapper.placeMarker(marker.lat, marker.lng, marker.name, marker.icon || Helpers.getIcon(marker));
       google.maps.event.addListener(gMarker, 'click', function() {
         return Mapper.click.stopMarker(marker);
       });

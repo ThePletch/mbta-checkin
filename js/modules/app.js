@@ -3,24 +3,25 @@
   this.App = (function() {
     function App() {}
 
-    App.getUserLocation = function(callback) {
+    App.getUserLocation = function() {
       if (navigator.geolocation) {
-        Helpers.events.fire('mbta-api-sent');
+        Helpers.events.fire('native-api-sent');
         return navigator.geolocation.getCurrentPosition(function(pos) {
-          Helpers.events.fire('mbta-api-completed');
-          return callback(pos.coords);
+          Helpers.events.fire('native-api-completed');
+          return Helpers.events.fire('app-location-found', pos.coords);
         }, function(error) {
-          Helpers.events.fire('mbta-api-error');
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              return ui.displayAlert('Denied request to geolocate user', true);
-            case error.POSITION_UNAVAILABLE:
-              return ui.displayAlert('Could not detect user location', true);
-            case error.TIMEOUT:
-              return ui.displayAlert('Attempt to find user timed out', true);
-            case error.UNKNOWN_ERROR:
-              return ui.displayAlert('Unknown error in geolocation', true);
-          }
+          return Helpers.events.fire('native-api-error', (function() {
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                return 'Denied request to geolocate user';
+              case error.POSITION_UNAVAILABLE:
+                return 'Could not detect user location';
+              case error.TIMEOUT:
+                return 'Attempt to find user timed out';
+              case error.UNKNOWN_ERROR:
+                return 'Unknown error in geolocation';
+            }
+          })());
         });
       } else {
         return ui.displayAlert('Your browser does not support geolocation', true);
