@@ -267,6 +267,23 @@
   })();
 
   this.Template = (function() {
+    Template.formats = {
+      locales: "en-US",
+      formats: {
+        time: {
+          hhmm: {
+            hour: "numeric",
+            minute: "numeric"
+          }
+        },
+        relative: {
+          minutes: {
+            units: "minute"
+          }
+        }
+      }
+    };
+
     function Template(name, compiledCallback) {
       var setCompiledData;
       this.compiled = false;
@@ -284,7 +301,11 @@
     }
 
     Template.prototype.render = function(context) {
-      return this.compiled && this._template(context);
+      return this.compiled && this._template(context, {
+        data: {
+          intl: Template.formats
+        }
+      });
     };
 
     return Template;
@@ -534,6 +555,7 @@
   $(function() {
     var compileTemplates, loadJson;
     compileTemplates = function(compiledCallback) {
+      HandlebarsIntl.registerWith(Handlebars);
       return async.map(['prediction-info', 'alerts'], function(templateName, callback) {
         return window.templates[templateName] = new Template(templateName, callback);
       }, function(error, success) {

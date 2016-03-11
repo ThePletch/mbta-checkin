@@ -84,7 +84,6 @@ class @Mbta
               trips: dir.trip
               minutesBetweenVehicles: minutesBetweenVehicles(dir.trip)
               predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000)
-              minutesAway: Math.round(parseInt(dir.trip[0].pre_away)/60)
 
         Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: parsedResult})
         callbacks.success(parsedResult)

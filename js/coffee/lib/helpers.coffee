@@ -157,6 +157,16 @@ class @Helpers
     val for key, val of newPredictions
 
 class @Template
+  @formats:
+    locales: "en-US"
+    formats:
+      time:
+        hhmm:
+          hour: "numeric"
+          minute: "numeric"
+      relative:
+        minutes:
+          units: "minute"
   constructor: (name, compiledCallback) ->
     @compiled = false
     @_template = null
@@ -171,7 +181,9 @@ class @Template
 
 
   render: (context) ->
-    return @compiled && @_template(context)
+    return @compiled && @_template context,
+      data:
+        intl: Template.formats
 
 class @Marker
   constructor: (@lat, @lng, @category) ->
@@ -280,6 +292,7 @@ window.jsonData = {}
 # load templates and JSON before initializing map
 $ ->
   compileTemplates = (compiledCallback) ->
+    HandlebarsIntl.registerWith(Handlebars);
     async.map ['prediction-info', 'alerts'],
       (templateName, callback) ->
         window.templates[templateName] = new Template(templateName, callback)

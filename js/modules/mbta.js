@@ -138,8 +138,7 @@
                       name: dir.direction_name,
                       trips: dir.trip,
                       minutesBetweenVehicles: minutesBetweenVehicles(dir.trip),
-                      predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000),
-                      minutesAway: Math.round(parseInt(dir.trip[0].pre_away) / 60)
+                      predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000)
                     };
                   })
                 };
