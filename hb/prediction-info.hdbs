@@ -11,7 +11,7 @@
         <div class="prediction-well">
         {{#each directions}}
             <div class="prediction-well">
-                {{name}}: {{formatTime predictedNextArrival "hhmm"}} ({{formatRelative predictedNextArrival "minutes"}})
+                {{name}}: {{time predictedNextArrival}} ({{arriving predictedNextArrival}})
                 <div class="prediction-well">
                     <ul>
                         <li>{{minutesBetweenVehicles}} minutes between {{../../vehicleName}}</li>

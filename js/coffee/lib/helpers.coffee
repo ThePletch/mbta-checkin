@@ -291,8 +291,21 @@ window.jsonData = {}
 
 # load templates and JSON before initializing map
 $ ->
+  registerHandlebarsHelpers = ->
+    Handlebars.registerHelper 'time', (date) ->
+      date.toLocaleString 'en-US',
+        timeZone: "America/New_York"
+        hour: "numeric"
+        minute: "numeric"
+    Handlebars.registerHelper 'arriving', (date) ->
+      minutesAway = new Date(date - new Date()).getMinutes()
+      if minutesAway is 0
+        "Arriving"
+      else
+        "#{minutesAway} minutes"
+
   compileTemplates = (compiledCallback) ->
-    HandlebarsIntl.registerWith(Handlebars);
+    registerHandlebarsHelpers()
     async.map ['prediction-info', 'alerts'],
       (templateName, callback) ->
         window.templates[templateName] = new Template(templateName, callback)

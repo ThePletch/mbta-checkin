@@ -553,9 +553,27 @@
   window.jsonData = {};
 
   $(function() {
-    var compileTemplates, loadJson;
+    var compileTemplates, loadJson, registerHandlebarsHelpers;
+    registerHandlebarsHelpers = function() {
+      Handlebars.registerHelper('time', function(date) {
+        return date.toLocaleString('en-US', {
+          timeZone: "America/New_York",
+          hour: "numeric",
+          minute: "numeric"
+        });
+      });
+      return Handlebars.registerHelper('arriving', function(date) {
+        var minutesAway;
+        minutesAway = new Date(date - new Date()).getMinutes();
+        if (minutesAway === 0) {
+          return "Arriving";
+        } else {
+          return minutesAway + " minutes";
+        }
+      });
+    };
     compileTemplates = function(compiledCallback) {
-      HandlebarsIntl.registerWith(Handlebars);
+      registerHandlebarsHelpers();
       return async.map(['prediction-info', 'alerts'], function(templateName, callback) {
         return window.templates[templateName] = new Template(templateName, callback);
       }, function(error, success) {

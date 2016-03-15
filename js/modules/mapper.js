@@ -55,7 +55,6 @@
         }
         feature = Mapper.featureManager._features[key];
         if (feature.constructor === Array) {
-          console.log("Rendering " + feature.length + " objects");
           return feature.forEach(function(subfeature) {
             return subfeature.render();
           });

@@ -34,7 +34,6 @@ class @Mapper
       feature = Mapper.featureManager._features[key]
 
       if feature.constructor is Array
-        console.log("Rendering #{feature.length} objects")
         feature.forEach((subfeature) -> subfeature.render())
       else
         feature.render()
