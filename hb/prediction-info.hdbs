@@ -1,20 +1,20 @@
 <h3>{{stop_name}}</h3>
 <ul>
-{{#each mode}}
+{{#each predictions}}
     <li>
-    {{#each route}}
+    {{#each routes}}
         <h5>
-            <span>{{route_name}}</span>
+            <span>{{self.name}} ({{endStations}})</span>
             <button class="track-route"
-                 data-route-id="{{route_id}}">View {{../vehicle_name}}</button>
+                 data-route-id="{{self.id}}">View {{../vehicleName}}</button>
         </h5>
         <div class="prediction-well">
-        {{#each direction}}
+        {{#each directions}}
             <div class="prediction-well">
-                {{direction_name}}: {{predict_str}} ({{away_str}})
+                {{name}}: {{time predictedNextArrival}} ({{arriving predictedNextArrival}})
                 <div class="prediction-well">
                     <ul>
-                        <li>{{time_between_trains}} between {{../../vehicle_name}}</li>
+                        <li>{{minutesBetweenVehicles}} minutes between {{../../vehicleName}}</li>
                     </ul>
                 </div>
             </div>

@@ -274,3 +274,7 @@ img:not([src]){
   margin-right: 1em !important;
   margin-top: 0;
 }
+
+button.silver {
+  background-color: #777;
+}

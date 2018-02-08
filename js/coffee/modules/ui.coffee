@@ -110,18 +110,18 @@ class @Ui
     Ui.bindButtons()
     Ui.bindToggles()
 
-    Helpers.events.bind('mapper-mbta-alerts', Ui.displayAlerts)
+    Helpers.events.bind('mbta-new-alerts', Ui.displayAlerts)
 
-    Helpers.events.bind 'mapper-mbta-predictions', (predictions) ->
+    Helpers.events.bind 'mbta-predictions', (predictions) ->
       Ui.displayModal('prediction-info', predictions)
 
-    Helpers.events.bind 'mbta-api-sent', ->
+    Helpers.events.bind ['mbta-api-sent', 'native-api-sent'], ->
       Ui.statusIndicator.setStatus('loading')
 
-    Helpers.events.bind 'mbta-api-completed', ->
+    Helpers.events.bind ['mbta-api-completed', 'native-api-completed'], ->
       Ui.statusIndicator.setStatus('success')
 
-    Helpers.events.bind 'mbta-api-error', (error) ->
+    Helpers.events.bind ['mbta-api-error', 'native-api-error'], (error) ->
       Ui.statusIndicator.setStatus('error', error)
 
     Helpers.events.bind 'ui-new-alert', ->
@@ -130,28 +130,6 @@ class @Ui
 
   @bindButtons: ->
     $('#zoom-location').click(Ui.fetchUserLocation)
-
-    trainLines = [
-      selector: '#update-blue'
-      lineName: 'Blue Line'
-      eventName: 'blue-updated'
-     ,
-      selector: '#update-green'
-      lineName: 'Green Line'
-      eventName: 'green-updated'
-     ,
-      selector: '#update-orange'
-      lineName: 'Orange Line'
-      eventName: 'orange-updated'
-     ,
-      selector: '#update-red'
-      lineName: 'Red Line'
-      eventName: 'red-updated'
-    ]
-    _.each trainLines, (line) ->
-      $(line.selector).click ->
-        Mbta.updateVehicleLocations(jsonData.routes_by_line[line.lineName])
-        Helpers.events.fire(line.eventName)
 
     $('#alerts').click ->
       $('#alerts').removeClass('error')
@@ -176,8 +154,10 @@ class @Ui
 
   @bindModalButtons: ->
     $('.track-route').click ->
+      window.buttonClicked = this
       routeId = $(this).attr('data-route-id')
-      Mbta.updateVehicleLocations([routeId])
+      Mbta.updateVehicleLocations(Helpers.cache.routes[routeId])
+      Ui.closeElement('modal-info-wrapper', 'modal-closed')
 
   @closeElement: (target, eventName) ->
     $("##{target}").removeClass('visible')
@@ -211,5 +191,4 @@ class @Ui
     ), Ui.modal.slideTransitionMs
 
   @fetchUserLocation: ->
-    App.getUserLocation (location) ->
-      Helpers.events.fire('ui-location-found', location)
+    App.getUserLocation()
