@@ -131,16 +131,20 @@ class @Helpers
           newSet[keyExtractor(element)] = mergeFunction(currentValue, element)
       val for key, val of newSet
     mergePredictionPair = (prediction, secondPrediction) ->
+      subarrExtractor = (prediction) -> prediction.routes
+      keyExtractor = (route) -> route.self.name
       _.extend prediction,
-        routes: mergePair [prediction, secondPrediction],
-          (prediction) -> prediction.routes,
-          (route) -> route.self.name,
-          mergeRoutePair
+        routes: mergePair([prediction, secondPrediction],
+          subarrExtractor,
+          keyExtractor,
+          mergeRoutePair)
     mergeRoutePair = (route, secondRoute) ->
+      subarrExtractor = (route) -> route.directions
+      keyExtractor = (direction) -> direction.name
       _.extend route,
         directions: mergePair [route, secondRoute],
-          (route) -> route.directions,
-          (direction) -> direction.name,
+          subarrExtractor,
+          keyExtractor,
           mergeDirectionPair
     mergeDirectionPair = (dir, secondDir) ->
       minutesAway: Math.min(dir.minutesAway, secondDir.minutesAway)
@@ -195,6 +199,12 @@ class @Marker
     else
       console.warn(this)
 
+class @LocationMarker extends Marker
+  constructor: (@lat, @lng) ->
+    @category = 'Location'
+  render: =>
+    @marker = Mapper.placeMarker(@lat, @lng, @category, Helpers.getIcon(@category))
+
 class @Stop extends Marker
   constructor: (@id, @name, @lat, @lng, @category) ->
     super @lat, @lng, @category
@@ -219,13 +229,16 @@ class @Stop extends Marker
         error: (err) ->
           callback(err)),
       (err, predictions) =>
-        result = Helpers.mergePredictions(_.flatten(predictions))
-        unless result.length > 0
-          Helpers.events.fire('stop-fetchdata-fail', this)
-          console.warn("No predictions found for stop #{result.stop_name} (ID #{result.stop_id})")
-          return
-        Helpers.events.fire('mbta-predictions', {stop_name: @name, predictions: result})
-        Helpers.events.fire('stop-fetchdata-success', this)
+        if err
+          Helpers.events.fire('stop-fetchdata-error', this)
+        else
+          result = Helpers.mergePredictions(_.flatten(predictions))
+          unless result.length > 0
+            Helpers.events.fire('stop-fetchdata-error', this)
+            console.warn("No predictions found for stop #{result.stop_name} (ID #{result.stop_id})")
+            return
+          Helpers.events.fire('mbta-predictions', {stop_name: @name, predictions: result})
+          Helpers.events.fire('stop-fetchdata-success', this)
 
 class @Vehicle extends Marker
   render: =>
@@ -254,8 +267,8 @@ class @Route
 
     Helpers.cache.routes[@id] = this
   setVehicles: (vehicles) ->
+    Mapper.featureManager.addFeature("live-vehicles", vehicles)
     @vehicles = vehicles
-    Mapper.featureManager.addFeature("live-vehicles", @vehicles)
   @fromRawApi: (api) ->
     Helpers.cache.routes[api.route_id] ?= new Route(api.route_id, api.route_name, "Subway")
   @getShapes: (id, callback) ->
@@ -282,7 +295,7 @@ class @Route
     @paths?.map((path) -> path.setMap(null))
     @paths = null
     @stops.map((stop) -> stop.destroy())
-    @vehicles.map((vehicle) -> vehicle.destroy())
+    #@vehicles.map((vehicle) -> vehicle.destroy())
   opacity: ->
     1.0
 

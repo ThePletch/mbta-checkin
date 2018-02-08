@@ -191,5 +191,4 @@ class @Ui
     ), Ui.modal.slideTransitionMs
 
   @fetchUserLocation: ->
-    App.getUserLocation (location) ->
-      Helpers.events.fire('ui-location-found', location)
+    App.getUserLocation()

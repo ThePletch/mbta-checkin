@@ -1,5 +1,5 @@
 class @Mbta
-  @apiUrl: 'http://realtime.mbta.com/developer/api/v2/'
+  @apiUrl: 'https://realtime.mbta.com/developer/api/v2/'
   @userLocMarker: null
   @localStops: []
   @trainLocations: {}
@@ -73,20 +73,23 @@ class @Mbta
     Mbta.makeApiRequest 'predictionsbystop', {stop: stop.id},
       success: (result) ->
         Helpers.events.fire('mbta-new-alerts', result.alert_headers.map((a) -> a.header_text))
-        parsedResult = result.mode.map (mode) ->
-          type: mode.mode_name
-          vehicleName: Helpers.vehicleName(mode.mode_name)
-          routes: mode.route.map (route) ->
-            self: Route.fromRawApi(route)
-            endStations: route.direction.map((dir) -> dir.trip[0].trip_headsign).join(" <-> ")
-            directions: route.direction.map (dir) ->
-              name: dir.direction_name
-              trips: dir.trip
-              minutesBetweenVehicles: minutesBetweenVehicles(dir.trip)
-              predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000)
+        if result.mode
+          parsedResult = result.mode.map (mode) ->
+            type: mode.mode_name
+            vehicleName: Helpers.vehicleName(mode.mode_name)
+            routes: mode.route.map (route) ->
+              self: Route.fromRawApi(route)
+              endStations: route.direction.map((dir) -> dir.trip[0].trip_headsign).join(" <-> ")
+              directions: route.direction.map (dir) ->
+                name: dir.direction_name
+                trips: dir.trip
+                minutesBetweenVehicles: minutesBetweenVehicles(dir.trip)
+                predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000)
 
-        Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: parsedResult})
-        callbacks.success(parsedResult)
+          Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: parsedResult})
+          callbacks.success(parsedResult)
+        else
+          callbacks.error(result)
       error: callbacks.error
 
   @updateVehicleLocations: (route) ->

@@ -7,6 +7,7 @@ class @Mapper
     lat: 42.358
     lng: -71.064
   @selected: null
+  @pendingSelectionEvent: null
   @zoom: 14
   @featureManager:
     _features: {}
@@ -19,22 +20,20 @@ class @Mapper
       return Mapper.featureManager._features[key]
     destroyFeature: (key) ->
       return unless Mapper.featureManager._features[key]
-
       feature = Mapper.featureManager._features[key]
 
       if feature.constructor is Array
-        console.log("Destroying #{feature.length} objects")
         for subfeature in feature
           subfeature.destroy()
       else
         feature.destroy()
     renderFeature: (key) ->
       return unless Mapper.featureManager._features[key]
-
       feature = Mapper.featureManager._features[key]
 
       if feature.constructor is Array
-        feature.forEach((subfeature) -> subfeature.render())
+        for subfeature in feature
+          subfeature.render()
       else
         feature.render()
 
@@ -45,6 +44,9 @@ class @Mapper
       styles: jsonData.google_style
       backgroundColor: '#2a2a2a'
       disableDefaultUI: true
+
+    Mapper.map.addListener 'click', (clickData) ->
+      Mapper.displayLocation(latitude: clickData.latLng.lat(), longitude: clickData.latLng.lng())
 
     Mapper.featureManager.addFeature 'defaultRoutes', Mapper.defaultRouteIds.map (routeId) ->
       route = jsonData.routes[routeId]
@@ -57,13 +59,7 @@ class @Mapper
 
     Helpers.events.bind 'modal-closed', Mapper.removeSelected
 
-    Helpers.events.bind 'ui-location-found', (coords) ->
-      Mapper.featureManager.addFeature('userLocation', new LocationMarker(coords))
-      Mapper.zoomToLocation(coords)
-      Mbta.getNearbyStops coords,
-        success: (stops) ->
-          Mapper.featureManager.addFeature('localStops', stops)
-        error: console.error
+    Helpers.events.bind 'app-location-found', Mapper.displayLocation
 
     Helpers.events.bind 'stop-selected', Mapper.markStopSelected
 
@@ -72,7 +68,17 @@ class @Mapper
 
     Helpers.events.bind 'stop-fetchdata-error', ->
       Mapper.markSelectedStopState('error')
+      Mapper.pendingSelectionEvent = setTimeout(Mapper.removeSelected, 2000)
 
+
+
+  @displayLocation: (coords) ->
+    Mapper.featureManager.addFeature('userLocation', new LocationMarker(coords.latitude, coords.longitude))
+    Mapper.zoomToLocation(coords)
+    Mbta.getNearbyStops coords,
+      success: (stops) ->
+        Mapper.featureManager.addFeature('localStops', stops)
+      error: console.error
   @markSelectedStopState: (state) ->
     currentIcon = Mapper.selected.getIcon()
     currentIcon.url = switch state
@@ -98,9 +104,6 @@ class @Mapper
       map: Mapper.map
       title: title
       icon: icon
-  @placeLocationMarker: (coords) ->
-    Mapper.placeMarker(coords.latitude, coords.longitude, "Location",
-      Helpers.getIcon(line: "Location"))
   @placeVehicleMarker: (marker) ->
     Mapper.placeMarker(marker.lat, marker.lng, marker.destination,
       marker.icon || Helpers.getLiveIcon(marker))
@@ -122,8 +125,11 @@ class @Mapper
     $.each(markers, (i, marker) -> Mapper.placeStopMarker(extractor(marker)))
 
   @removeSelected: ->
-    Mapper.selected.setMap(null)
-    Mapper.selected = null
+    if Mapper.pendingSelectionEvent
+      clearTimeout(Mapper.pendingSelectionEvent)
+    if Mapper.selected
+      Mapper.selected.setMap(null)
+      Mapper.selected = null
 
   @zoomToLocation: (location) ->
     Mapper.map.setCenter(new google.maps.LatLng(location.latitude, location.longitude))
