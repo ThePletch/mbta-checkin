@@ -71,10 +71,29 @@
       });
     };
 
-    Mbta.getRoutesByStop = function(stop, callbacks) {
-      return Mbta.makeApiRequest('routesbystop', {
-        stop: stop.id
-      }, callbacks);
+    Mbta.getRoutesByStop = function(stop, returnAsTemporary, callbacks) {
+      var routeClass;
+      if (Helpers.cache.routesForStop[stop.id]) {
+        return callbacks.success(Helpers.cache.routesForStop[stop.id]);
+      } else {
+        routeClass = returnAsTemporary ? TemporaryRoute : Route;
+        return Mbta.makeApiRequest('routesbystop', {
+          stop: stop.id
+        }, {
+          success: function(result) {
+            var routes;
+            routes = [];
+            result.mode.map(function(mode) {
+              return routes = routes.concat(mode.route.map(function(route) {
+                return new routeClass(route.route_id, route.route_name, mode.mode_name);
+              }));
+            });
+            Helpers.cache.routesForStop[stop.id] = routes;
+            return callbacks.success(routes);
+          },
+          error: callbacks.error
+        });
+      }
     };
 
     Mbta.getStopsByRoute = function(route, callbacks) {

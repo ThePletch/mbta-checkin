@@ -37,8 +37,21 @@ class @Mbta
         .map (stop) ->
           Stop.fromRawApi(stop))
       error: callbacks.error
-  @getRoutesByStop: (stop, callbacks) ->
-    Mbta.makeApiRequest('routesbystop', {stop: stop.id}, callbacks)
+  @getRoutesByStop: (stop, returnAsTemporary, callbacks) ->
+    if Helpers.cache.routesForStop[stop.id]
+      callbacks.success(Helpers.cache.routesForStop[stop.id])
+    else
+      routeClass = if returnAsTemporary then TemporaryRoute else Route
+      Mbta.makeApiRequest 'routesbystop', {stop: stop.id},
+        success: (result) ->
+          routes = []
+          result.mode.map (mode) ->
+            routes = routes.concat mode.route.map (route) ->
+              new routeClass(route.route_id, route.route_name, mode.mode_name)
+          Helpers.cache.routesForStop[stop.id] = routes
+          callbacks.success(routes)
+        error: callbacks.error
+
   @getStopsByRoute: (route, callbacks) ->
     Mbta.makeApiRequest('stopsbyroute', {route: route.id}, callbacks)
   @getTrainsByRoute: (route, callbacks) ->

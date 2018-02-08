@@ -29,6 +29,7 @@ class @Helpers
   @cache:
     routes: {}
     stops: {}
+    routesForStop: {}
     vehicles: {}
   @ensureJsonParsed: (json) ->
     if typeof json in [String, 'string']
@@ -212,7 +213,6 @@ class @Stop extends Marker
     Helpers.cache.stops[@id] = this
   render: =>
     @marker = Mapper.placeMarker(@lat, @lng, @name, Helpers.getIcon(@category))
-    console.log(@marker) unless @marker
 
     @listener = google.maps.event.addListener @marker, 'click', @onClick
   @fromRawApi: (api) ->
@@ -222,6 +222,7 @@ class @Stop extends Marker
   onClick: =>
     Helpers.events.fire('stop-selected', this)
     stopAndChildren = [this.id].concat(jsonData.stop_descendants[this.id] || [])
+    Mapper.drawRoutesForStops([this])
     async.map stopAndChildren, ((stopId, callback) ->
       Mbta.getNextTrainsToStop {id: stopId},
         success: (result) ->
@@ -264,6 +265,7 @@ class @Route
     @color = Helpers.getLineColor(@id)
     @stops ?= []
     @vehicles ?= []
+    @shapes ?= []
 
     Helpers.cache.routes[@id] = this
   setVehicles: (vehicles) ->
@@ -282,6 +284,7 @@ class @Route
             {lat: point.lat, lng: point.lon}
   render: (renderStops) ->
     Route.getShapes @id, (shapes) =>
+      @shapes = shapes
       @paths ?= shapes.map (shape) =>
         new google.maps.Polyline
           path: shape
@@ -289,15 +292,44 @@ class @Route
           strokeOpacity: @opacity()
           strokeWeight: 5
       @paths.map((path) -> path.setMap(Mapper.map))
+      @afterRenderCallback()
 
     @stops.map((stop) -> stop.render()) if renderStops
+  afterRenderCallback: ->
   destroy: ->
     @paths?.map((path) -> path.setMap(null))
     @paths = null
     @stops.map((stop) -> stop.destroy())
-    #@vehicles.map((vehicle) -> vehicle.destroy())
   opacity: ->
     1.0
+
+class @TemporaryRoute extends Route
+  @fadeOutStep = 0.92
+  @fadeOutFrequencyMs = 10
+  @stopFadingThreshold = 0.2
+
+  constructor: (@id, @name, @mode, @stops, @vehicles) ->
+    super @id, @name, @mode, @stops, @vehicles
+
+    @currentOpacity = @opacity()
+    @fadeOutEvent = null
+
+  destroy: ->
+    super()
+    @currentOpacity = @opacity()
+    if @fadeOutEvent != null
+      clearTimeout(@fadeOutEvent)
+      @fadeOutEvent = null
+
+  afterRenderCallback: ->
+    @fadeOut()
+  fadeOut: =>
+    return if @currentOpacity < TemporaryRoute.stopFadingThreshold
+    @paths.map (path) =>
+      path.setOptions
+        strokeOpacity: @currentOpacity * TemporaryRoute.fadeOutStep
+    @currentOpacity = @currentOpacity * TemporaryRoute.fadeOutStep
+    @fadeOutEvent = setTimeout(@fadeOut, TemporaryRoute.fadeOutFrequencyMs)
 
 window.templates = {}
 window.jsonData = {}

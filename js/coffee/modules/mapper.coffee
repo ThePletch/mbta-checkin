@@ -70,14 +70,28 @@ class @Mapper
       Mapper.markSelectedStopState('error')
       Mapper.pendingSelectionEvent = setTimeout(Mapper.removeSelected, 2000)
 
-
+  @drawRoutesForStops: (stops) ->
+    async.map stops,
+      (stop, subCallback) ->
+        Mbta.getRoutesByStop stop, true
+          success: (routes) ->
+            subCallback(null, routes)
+          error: console.error
+      (error, allRoutes) ->
+        if error
+          console.error(error)
+        else
+          uniqueRoutes = _.uniq(_.flatten(allRoutes), false, (route) -> route.id)
+          nonDefaultUniqueRoutes = _.reject(uniqueRoutes, (route) -> Mapper.defaultRouteIds.indexOf(route.id) != -1)
+          Mapper.featureManager.addFeature('traced-route', nonDefaultUniqueRoutes)
 
   @displayLocation: (coords) ->
-    Mapper.featureManager.addFeature('userLocation', new LocationMarker(coords.latitude, coords.longitude))
+    Mapper.featureManager.addFeature('user-location', new LocationMarker(coords.latitude, coords.longitude))
     Mapper.zoomToLocation(coords)
     Mbta.getNearbyStops coords,
       success: (stops) ->
-        Mapper.featureManager.addFeature('localStops', stops)
+        Mapper.drawRoutesForStops(stops)
+        Mapper.featureManager.addFeature('local-stops', stops)
       error: console.error
   @markSelectedStopState: (state) ->
     currentIcon = Mapper.selected.getIcon()

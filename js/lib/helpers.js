@@ -59,6 +59,7 @@
     Helpers.cache = {
       routes: {},
       stops: {},
+      routesForStop: {},
       vehicles: {}
     };
 
@@ -387,9 +388,6 @@
 
     Stop.prototype.render = function() {
       this.marker = Mapper.placeMarker(this.lat, this.lng, this.name, Helpers.getIcon(this.category));
-      if (!this.marker) {
-        console.log(this.marker);
-      }
       return this.listener = google.maps.event.addListener(this.marker, 'click', this.onClick);
     };
 
@@ -406,6 +404,7 @@
         _this = this;
       Helpers.events.fire('stop-selected', this);
       stopAndChildren = [this.id].concat(jsonData.stop_descendants[this.id] || []);
+      Mapper.drawRoutesForStops([this]);
       return async.map(stopAndChildren, (function(stopId, callback) {
         return Mbta.getNextTrainsToStop({
           id: stopId
@@ -497,7 +496,7 @@
   this.Route = (function() {
 
     function Route(id, name, mode, stops, vehicles) {
-      var _ref, _ref1;
+      var _ref, _ref1, _ref2;
       this.id = id;
       this.name = name;
       this.mode = mode;
@@ -509,6 +508,9 @@
       }
       if ((_ref1 = this.vehicles) == null) {
         this.vehicles = [];
+      }
+      if ((_ref2 = this.shapes) == null) {
+        this.shapes = [];
       }
       Helpers.cache.routes[this.id] = this;
     }
@@ -544,6 +546,7 @@
       var _this = this;
       Route.getShapes(this.id, function(shapes) {
         var _ref;
+        _this.shapes = shapes;
         if ((_ref = _this.paths) == null) {
           _this.paths = shapes.map(function(shape) {
             return new google.maps.Polyline({
@@ -554,9 +557,10 @@
             });
           });
         }
-        return _this.paths.map(function(path) {
+        _this.paths.map(function(path) {
           return path.setMap(Mapper.map);
         });
+        return _this.afterRenderCallback();
       });
       if (renderStops) {
         return this.stops.map(function(stop) {
@@ -564,6 +568,8 @@
         });
       }
     };
+
+    Route.prototype.afterRenderCallback = function() {};
 
     Route.prototype.destroy = function() {
       var _ref;
@@ -585,6 +591,60 @@
     return Route;
 
   })();
+
+  this.TemporaryRoute = (function(_super) {
+
+    __extends(TemporaryRoute, _super);
+
+    TemporaryRoute.fadeOutStep = 0.92;
+
+    TemporaryRoute.fadeOutFrequencyMs = 10;
+
+    TemporaryRoute.stopFadingThreshold = 0.2;
+
+    function TemporaryRoute(id, name, mode, stops, vehicles) {
+      this.id = id;
+      this.name = name;
+      this.mode = mode;
+      this.stops = stops;
+      this.vehicles = vehicles;
+      this.fadeOut = __bind(this.fadeOut, this);
+
+      TemporaryRoute.__super__.constructor.call(this, this.id, this.name, this.mode, this.stops, this.vehicles);
+      this.currentOpacity = this.opacity();
+      this.fadeOutEvent = null;
+    }
+
+    TemporaryRoute.prototype.destroy = function() {
+      TemporaryRoute.__super__.destroy.call(this);
+      this.currentOpacity = this.opacity();
+      if (this.fadeOutEvent !== null) {
+        clearTimeout(this.fadeOutEvent);
+        return this.fadeOutEvent = null;
+      }
+    };
+
+    TemporaryRoute.prototype.afterRenderCallback = function() {
+      return this.fadeOut();
+    };
+
+    TemporaryRoute.prototype.fadeOut = function() {
+      var _this = this;
+      if (this.currentOpacity < TemporaryRoute.stopFadingThreshold) {
+        return;
+      }
+      this.paths.map(function(path) {
+        return path.setOptions({
+          strokeOpacity: _this.currentOpacity * TemporaryRoute.fadeOutStep
+        });
+      });
+      this.currentOpacity = this.currentOpacity * TemporaryRoute.fadeOutStep;
+      return this.fadeOutEvent = setTimeout(this.fadeOut, TemporaryRoute.fadeOutFrequencyMs);
+    };
+
+    return TemporaryRoute;
+
+  })(Route);
 
   window.templates = {};
 

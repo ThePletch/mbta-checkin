@@ -107,12 +107,37 @@
       });
     };
 
+    Mapper.drawRoutesForStops = function(stops) {
+      return async.map(stops, function(stop, subCallback) {
+        return Mbta.getRoutesByStop(stop, true, {
+          success: function(routes) {
+            return subCallback(null, routes);
+          },
+          error: console.error
+        });
+      }, function(error, allRoutes) {
+        var nonDefaultUniqueRoutes, uniqueRoutes;
+        if (error) {
+          return console.error(error);
+        } else {
+          uniqueRoutes = _.uniq(_.flatten(allRoutes), false, function(route) {
+            return route.id;
+          });
+          nonDefaultUniqueRoutes = _.reject(uniqueRoutes, function(route) {
+            return Mapper.defaultRouteIds.indexOf(route.id) !== -1;
+          });
+          return Mapper.featureManager.addFeature('traced-route', nonDefaultUniqueRoutes);
+        }
+      });
+    };
+
     Mapper.displayLocation = function(coords) {
-      Mapper.featureManager.addFeature('userLocation', new LocationMarker(coords.latitude, coords.longitude));
+      Mapper.featureManager.addFeature('user-location', new LocationMarker(coords.latitude, coords.longitude));
       Mapper.zoomToLocation(coords);
       return Mbta.getNearbyStops(coords, {
         success: function(stops) {
-          return Mapper.featureManager.addFeature('localStops', stops);
+          Mapper.drawRoutesForStops(stops);
+          return Mapper.featureManager.addFeature('local-stops', stops);
         },
         error: console.error
       });
