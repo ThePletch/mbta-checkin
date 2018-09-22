@@ -1,12 +1,12 @@
 class @Mbta
-  @apiUrl: 'https://realtime.mbta.com/developer/api/v2/'
+  @apiUrl: 'https://api-v3.mbta.com/'
   @userLocMarker: null
   @localStops: []
   @trainLocations: {}
 
   @makeApiRequest: (path, additionalParams, callbacks, triggerStatusEvents) ->
     params =
-      api_key: 'dHl1-NB5RUSVzujwXXlDZg'
+      api_key: '5b1ca80157b74611857c912337044985'
 
     additionalParams ?= {}
     triggerStatusEvents ?= true
@@ -28,68 +28,68 @@ class @Mbta
 
   @initialize: ->
   @getStopsByLocation: (lat, lon, callbacks) ->
-    Mbta.makeApiRequest('stopsbylocation', {lat: lat, lon: lon}, callbacks)
+    Mbta.makeApiRequest('stops', {filter: {latitude: lat, longitude: lon}}, callbacks)
   @getNearbyStops: (coords, callbacks) ->
     Mbta.getStopsByLocation coords.latitude, coords.longitude,
       success: (result) ->
-        callbacks.success(result.stop.filter (stop) ->
-          !Stop.isMainStop(stop.stop_id, stop.parent_station)
+        callbacks.success(result.data.filter (stop) ->
+          !Stop.isMainStop(stop.id, stop.relationships.parent_station)
         .map (stop) ->
           Stop.fromRawApi(stop))
       error: callbacks.error
+  @getRoute: (routeId, callbacks) ->
+    Mbta.makeApiRequest('routes/' + routeId, {}, callbacks)
   @getRoutesByStop: (stop, callbacks) ->
-    Mbta.makeApiRequest('routesbystop', {stop: stop.id}, callbacks)
+    Mbta.makeApiRequest('routes', {filter: {stop: stop.id}}, callbacks)
   @getStopsByRoute: (route, callbacks) ->
-    Mbta.makeApiRequest('stopsbyroute', {route: route.id}, callbacks)
+    Mbta.makeApiRequest('stops', {filter: {route: route.id}}, callbacks)
   @getTrainsByRoute: (route, callbacks) ->
-    Mbta.makeApiRequest('vehiclesbyroute', {route: route.id},
+    Mbta.makeApiRequest('vehicles', {filter: {route: route.id}, include: 'trip'},
       success: (routeInfo) ->
-        callbacks.success _.flatten routeInfo.direction.map (dir) ->
-          dir.trip.map (trip) ->
-            vehicle = trip.vehicle
-            return new LiveTrain(
-              vehicle.vehicle_id,
-              route,
-              trip.trip_headsign,
-              vehicle.vehicle_lat,
-              vehicle.vehicle_lon,
-              vehicle.vehicle_bearing)
+        callbacks.success routeInfo.data.map (trainData) ->
+          trip = _.findWhere(routeInfo.included, {id: trainData.relationships.trip.data.id})
+          train = trainData.attributes
+          return new LiveTrain(
+            train.label,
+            route,
+            trip.headsign,
+            train.latitude,
+            train.longitude,
+            train.bearing)
       error: callbacks.error,
       false) # don't trigger a status indicator update for this call
   @getNextTrainsToStop: (stop, callbacks) ->
-    minutesBetweenVehicles = (vehicles) ->
-      sumTimeBetween = 0
-      lastTripScheduled = -1
+    # takes a route id and the 'included' segment from the api response and builds the route object
+    routeInfoBlock = (id, inclusions) ->
+      apiInfo = _.findWhere(inclusions, {id: id})
 
-      vehicles.forEach (vehicle) ->
-        if lastTripScheduled != -1
-          sumTimeBetween += parseInt(vehicle.pre_dt) - lastTripScheduled
-        else
-          sumTimeBetween += parseInt(vehicle.pre_away)
-        lastTripScheduled = parseInt(vehicle.pre_dt)
+      {
+        name: _.compact([apiInfo.attributes.short_name, apiInfo.attributes.long_name]).join(' - ')
+        vehicleName: Helpers.vehicleName(apiInfo.attributes.description)
+        directions: {}
+      }
 
-      return Math.round((sumTimeBetween/vehicles.length)/60)
+    routeDirectionName = (id, directionId, inclusions) ->
+      _.findWhere(inclusions, {id: id, type: 'route'}).attributes.direction_names[directionId]
 
-    Mbta.makeApiRequest 'predictionsbystop', {stop: stop.id},
+    Mbta.makeApiRequest 'predictions', {filter: {stop: stop.id}, include: 'route'},
       success: (result) ->
-        Helpers.events.fire('mbta-new-alerts', result.alert_headers.map((a) -> a.header_text))
-        if result.mode
-          parsedResult = result.mode.map (mode) ->
-            type: mode.mode_name
-            vehicleName: Helpers.vehicleName(mode.mode_name)
-            routes: mode.route.map (route) ->
-              self: Route.fromRawApi(route)
-              endStations: route.direction.map((dir) -> dir.trip[0].trip_headsign).join(" <-> ")
-              directions: route.direction.map (dir) ->
-                name: dir.direction_name
-                trips: dir.trip
-                minutesBetweenVehicles: minutesBetweenVehicles(dir.trip)
-                predictedNextArrival: new Date(parseInt(dir.trip[0].pre_dt) * 1000)
+        console.log(result)
+        resultsByRoute = {}
 
-          Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: parsedResult})
-          callbacks.success(parsedResult)
-        else
-          callbacks.error(result)
+        result.data.forEach (datum) ->
+          prediction = new Date(datum.attributes.arrival_time)
+          routeId = datum.relationships.route.data.id
+          directionId = datum.attributes.direction_id
+
+          resultsByRoute[routeId] ||= routeInfoBlock(routeId, result.included)
+          resultsByRoute[routeId].directions[directionId] ||= {
+            name: routeDirectionName(routeId, directionId, result.included)
+            predictions: []
+          }
+          resultsByRoute[routeId].directions[datum.attributes.direction_id].predictions.push(prediction)
+        Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: resultsByRoute})
+        callbacks.success(resultsByRoute)
       error: callbacks.error
 
   @updateVehicleLocations: (route) ->

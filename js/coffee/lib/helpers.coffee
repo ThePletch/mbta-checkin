@@ -115,8 +115,8 @@ class @Helpers
     if minutes > 0 then minutes + ' mins' else 'Arr'
   @vehicleName: (modeName) ->
     vehicleNameMap =
-      'Subway': 'trains'
-      'Bus': 'buses'
+      'Rapid Transit': 'trains'
+      'Local Bus': 'buses'
       'Commuter Rail': 'trains'
 
     vehicleNameMap[modeName]
@@ -216,9 +216,9 @@ class @Stop extends Marker
 
     @listener = google.maps.event.addListener @marker, 'click', @onClick
   @fromRawApi: (api) ->
-    return Helpers.cache.stops[api.stop_id] or new Stop(api.stop_id, api.stop_name, parseFloat(api.stop_lat), parseFloat(api.stop_lon), "Bus")
+    return Helpers.cache.stops[api.id] or new Stop(api.id, api.attributes.name, parseFloat(api.attributes.latitude), parseFloat(api.attributes.longitude), "Bus")
   @isMainStop: (id, parentStation) ->
-    Mapper.defaultStopIds.indexOf(id) isnt -1 or parentStation isnt ""
+    Mapper.defaultStopIds.indexOf(id) isnt -1 or parentStation.data isnt null
   onClick: =>
     Helpers.events.fire('stop-selected', this)
     stopAndChildren = [this.id].concat(jsonData.stop_descendants[this.id] || [])
@@ -269,8 +269,16 @@ class @Route
   setVehicles: (vehicles) ->
     Mapper.featureManager.addFeature("live-vehicles", vehicles)
     @vehicles = vehicles
+  @byId: (id, callbacks) ->
+    if Helpers.cache.routes[id]
+      callbacks.success(Helpers.cache.routes[id])
+    else
+      Mbta.getRoute id,
+        success: (result) ->
+          callbacks.success(Route.fromRawApi(result))
   @fromRawApi: (api) ->
-    Helpers.cache.routes[api.route_id] ?= new Route(api.route_id, api.route_name, "Subway")
+    route = api.data
+    Helpers.cache.routes[route.id] ?= new Route(route.id, route.attributes.name, "Subway")
   @getShapes: (id, callback) ->
     async.map jsonData.shapes_by_route[id],
       (shapeId, subCallback) ->
@@ -295,7 +303,6 @@ class @Route
     @paths?.map((path) -> path.setMap(null))
     @paths = null
     @stops.map((stop) -> stop.destroy())
-    #@vehicles.map((vehicle) -> vehicle.destroy())
   opacity: ->
     1.0
 

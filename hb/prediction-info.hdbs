@@ -2,21 +2,16 @@
 <ul>
 {{#each predictions}}
     <li>
-    {{#each routes}}
+    {{#each this}}
         <h5>
-            <span>{{self.name}} ({{endStations}})</span>
+            <span>{{name}}</span>
             <button class="track-route"
-                 data-route-id="{{self.id}}">View {{../vehicleName}}</button>
+                 data-route-id="{{@key}}">View {{vehicleName}}</button>
         </h5>
         <div class="prediction-well">
         {{#each directions}}
             <div class="prediction-well">
-                {{name}}: {{time predictedNextArrival}} ({{arriving predictedNextArrival}})
-                <div class="prediction-well">
-                    <ul>
-                        <li>{{minutesBetweenVehicles}} minutes between {{../../vehicleName}}</li>
-                    </ul>
-                </div>
+                {{name}}: {{time predictions.[0]}} ({{arriving predictions.[0]}})
             </div>
         {{/each}}
         </div>

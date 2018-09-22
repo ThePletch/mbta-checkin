@@ -156,8 +156,10 @@ class @Ui
     $('.track-route').click ->
       window.buttonClicked = this
       routeId = $(this).attr('data-route-id')
-      Mbta.updateVehicleLocations(Helpers.cache.routes[routeId])
-      Ui.closeElement('modal-info-wrapper', 'modal-closed')
+      Route.byId routeId,
+        success: (route) ->
+          Mbta.updateVehicleLocations(route)
+          Ui.closeElement('modal-info-wrapper', 'modal-closed')
 
   @closeElement: (target, eventName) ->
     $("##{target}").removeClass('visible')
