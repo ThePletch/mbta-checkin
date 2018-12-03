@@ -144,7 +144,7 @@
           resultsByRoute = {};
           result.data.forEach(function(datum) {
             var base, directionId, prediction, routeId;
-            prediction = new Date(datum.attributes.arrival_time);
+            prediction = new Date(datum.attributes.arrival_time || datum.attributes.departure_time);
             routeId = datum.relationships.route.data.id;
             directionId = datum.attributes.direction_id;
             resultsByRoute[routeId] || (resultsByRoute[routeId] = routeInfoBlock(routeId, result.included));
