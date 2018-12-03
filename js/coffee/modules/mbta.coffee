@@ -78,7 +78,8 @@ class @Mbta
         resultsByRoute = {}
 
         result.data.forEach (datum) ->
-          prediction = new Date(datum.attributes.arrival_time)
+          # arrival time will be null for predictions at a terminus station, so we fall back to departure time
+          prediction = new Date(datum.attributes.arrival_time || datum.attributes.departure_time)
           routeId = datum.relationships.route.data.id
           directionId = datum.attributes.direction_id
 
