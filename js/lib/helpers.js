@@ -61,6 +61,8 @@
       vehicles: {}
     };
 
+    Helpers.intervals = {};
+
     Helpers.ensureJsonParsed = function(json) {
       var ref;
       if ((ref = typeof json) === String || ref === 'string') {
@@ -501,7 +503,7 @@
     }
 
     Route.prototype.setVehicles = function(vehicles) {
-      Mapper.featureManager.addFeature("live-vehicles", vehicles);
+      Mapper.featureManager.addFeature("live-vehicles-" + this.id, vehicles);
       return this.vehicles = vehicles;
     };
 
@@ -639,7 +641,7 @@
         }
       });
     };
-    return async.map([loadJson, compileTemplates], function(prepFunction, callback) {
+    async.map([loadJson, compileTemplates], function(prepFunction, callback) {
       return prepFunction(callback);
     }, function(error, success) {
       if (error) {
@@ -647,6 +649,20 @@
       } else {
         return Helpers.events.fire('prep-complete');
       }
+    });
+    return Helpers.events.bind('prep-complete', function() {
+      var updateTrains;
+      updateTrains = function() {
+        return Mbta.routeIdsToAutoUpdate.map(function(routeId) {
+          return Route.byId(routeId, {
+            success: function(route) {
+              return Mbta.updateVehicleLocations(route);
+            }
+          });
+        });
+      };
+      updateTrains();
+      return Helpers.intervals['periodicTrainUpdateInterval'] = setInterval(updateTrains, Mbta.routeAutoUpdateIntervalSeconds * 1000);
     });
   });
 

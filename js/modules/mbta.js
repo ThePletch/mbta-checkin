@@ -13,6 +13,10 @@
 
     Mbta.trainLocations = {};
 
+    Mbta.routeIdsToAutoUpdate = ["741", "742", "746", "749", "751", "Green-B", "Green-C", "Green-D", "Green-E", "Red", "Blue", "Orange"];
+
+    Mbta.routeAutoUpdateIntervalSeconds = 90;
+
     Mbta.makeApiRequest = function(path, additionalParams, callbacks, triggerStatusEvents) {
       var key, params, val;
       params = {};
@@ -99,12 +103,21 @@
       }, {
         success: function(routeInfo) {
           return callbacks.success(routeInfo.data.map(function(trainData) {
-            var train, trip;
+            var headsign, train, trip;
             trip = _.findWhere(routeInfo.included, {
               id: trainData.relationships.trip.data.id
             });
             train = trainData.attributes;
-            return new LiveTrain(train.label, route, trip.headsign, train.latitude, train.longitude, train.bearing);
+            headsign = null;
+            if (trip) {
+              headsign = trip.attributes.headsign;
+            } else {
+              console.warn("Found a vehicle with no matching trip. Assuming that this is the Night Train (BOTTOMS UP).");
+              console.warn(trainData);
+              console.warn(routeInfo);
+              headsign = 'THE NIGHT TRAIN';
+            }
+            return new LiveTrain(train.label, route, headsign, train.latitude, train.longitude, train.bearing);
           }));
         },
         error: callbacks.error

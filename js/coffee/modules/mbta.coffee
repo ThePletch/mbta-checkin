@@ -3,6 +3,8 @@ class @Mbta
   @userLocMarker: null
   @localStops: []
   @trainLocations: {}
+  @routeIdsToAutoUpdate: ["741", "742", "746", "749", "751", "Green-B", "Green-C", "Green-D", "Green-E", "Red", "Blue", "Orange"]
+  @routeAutoUpdateIntervalSeconds: 90
 
   @makeApiRequest: (path, additionalParams, callbacks, triggerStatusEvents) ->
     params = {}
@@ -48,10 +50,20 @@ class @Mbta
         callbacks.success routeInfo.data.map (trainData) ->
           trip = _.findWhere(routeInfo.included, {id: trainData.relationships.trip.data.id})
           train = trainData.attributes
+          headsign = null
+
+          if trip
+            headsign = trip.attributes.headsign
+          else
+            console.warn("Found a vehicle with no matching trip. Assuming that this is the Night Train (BOTTOMS UP).")
+            console.warn(trainData)
+            console.warn(routeInfo)
+            headsign = 'THE NIGHT TRAIN'
+
           return new LiveTrain(
             train.label,
             route,
-            trip.headsign,
+            headsign,
             train.latitude,
             train.longitude,
             train.bearing)

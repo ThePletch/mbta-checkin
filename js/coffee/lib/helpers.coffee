@@ -30,6 +30,7 @@ class @Helpers
     routes: {}
     stops: {}
     vehicles: {}
+  @intervals: {}
   @ensureJsonParsed: (json) ->
     if typeof json in [String, 'string']
       return JSON.parse(json)
@@ -267,7 +268,7 @@ class @Route
 
     Helpers.cache.routes[@id] = this
   setVehicles: (vehicles) ->
-    Mapper.featureManager.addFeature("live-vehicles", vehicles)
+    Mapper.featureManager.addFeature("live-vehicles-#{@id}", vehicles)
     @vehicles = vehicles
   @byId: (id, callbacks) ->
     if Helpers.cache.routes[id]
@@ -356,3 +357,11 @@ $ ->
         console.error(error)
       else
         Helpers.events.fire('prep-complete')
+  Helpers.events.bind 'prep-complete', () ->
+    updateTrains = () ->
+      Mbta.routeIdsToAutoUpdate.map (routeId) ->
+        Route.byId routeId,
+          success: (route) ->
+            Mbta.updateVehicleLocations(route)
+    updateTrains()
+    Helpers.intervals['periodicTrainUpdateInterval'] = setInterval(updateTrains, Mbta.routeAutoUpdateIntervalSeconds * 1000)
