@@ -1,12 +1,11 @@
 class @Mbta
-  @apiUrl: 'https://api-v3.mbta.com/'
+  @apiUrl: 'https://sm614m053d.execute-api.us-east-1.amazonaws.com/Prod/cached_api/'
   @userLocMarker: null
   @localStops: []
   @trainLocations: {}
 
   @makeApiRequest: (path, additionalParams, callbacks, triggerStatusEvents) ->
-    params =
-      api_key: '5b1ca80157b74611857c912337044985'
+    params = {}
 
     additionalParams ?= {}
     triggerStatusEvents ?= true

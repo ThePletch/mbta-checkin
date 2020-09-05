@@ -5,7 +5,7 @@
   this.Mbta = (function() {
     function Mbta() {}
 
-    Mbta.apiUrl = 'https://api-v3.mbta.com/';
+    Mbta.apiUrl = 'https://sm614m053d.execute-api.us-east-1.amazonaws.com/Prod/cached_api/';
 
     Mbta.userLocMarker = null;
 
@@ -15,9 +15,7 @@
 
     Mbta.makeApiRequest = function(path, additionalParams, callbacks, triggerStatusEvents) {
       var key, params, val;
-      params = {
-        api_key: '5b1ca80157b74611857c912337044985'
-      };
+      params = {};
       if (additionalParams == null) {
         additionalParams = {};
       }
