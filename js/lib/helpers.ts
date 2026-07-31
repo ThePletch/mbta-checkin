@@ -1,89 +1,88 @@
-Number.prototype.leftPad = function(len, padder) {
-  let s = this.toString();
-  if (padder == null) {
-    padder = '0';
-  }
+import Handlebars from 'handlebars';
+import type { LatLng, LineColor, MbtaResource, MbtaResponse, RouteId, RouteLongName, ShapePoint } from './types/mbta';
+import { Branded, hasKey } from './types/util';
 
-  while (s.length < len) {
-    s = padder + s;
-  }
+import shapes_by_route from '../json/shapes_by_route.json';
 
-  return s;
+
+type EventCallback = (params: unknown) => void;
+
+type MarkerCategory = RouteLongName | 'Bus' | 'Location';
+type HexColor = Branded<string, 'Hex'>;
+
+
+export const events = {
+  _ev: {} as Record<string, EventCallback[]>,
+  bind(eventName: string | string[], func: EventCallback) {
+    const bindEvent = (name: string, boundFunc: EventCallback) => {
+      if (!(name in events._ev)) {
+        events._ev[name] = [];
+      }
+      events._ev[name].push(boundFunc);
+    };
+
+    if (eventName instanceof Array) {
+      eventName.map((name) => bindEvent(name, func));
+    } else {
+      bindEvent(eventName, func);
+    }
+  },
+  fire(eventName: string, params?: unknown) {
+    if (!(eventName in events._ev)) {
+      return;
+    }
+
+    for (const func of events._ev[eventName]) {
+      func(params);
+    }
+  }
 };
 
-const Helpers = {
-  events: {
-    _ev: {},
-    bind(eventName, func) {
-      const bindEvent = (name, boundFunc) => {
-        const self = Helpers.events;
-        if (self._ev[name] == null) {
-          self._ev[name] = [];
-        }
-        self._ev[name].push(boundFunc);
-      };
-      if (eventName.constructor === Array) {
-        eventName.map((name) => bindEvent(name, func));
-      } else {
-        bindEvent(eventName, func);
-      }
-    },
-    fire(eventName, params) {
-      const self = Helpers.events;
+export const cache = {
+  routes: {} as Record<string, Route>,
+  stops: {} as Record<string, Stop>,
+  vehicles: {} as Record<string, Vehicle>,
+},
 
-      if (self._ev[eventName] == null) {
-        return;
-      }
+export const intervals: {};
 
-      for (const func of self._ev[eventName]) {
-        func(params);
-      }
+export function ensureJsonParsed(json: string | object): object {
+  if (typeof json === 'string') {
+    return JSON.parse(json);
+  } else {
+    return json;
+  }
+}
+
+  export function toQueryString(data?: QuerySerializable): string {
+    function isNestedObject(val: unknown): val is QuerySerializable {
+      return typeof val === 'object' && val !== null && !Array.isArray(val);
     }
-  },
-
-  cache: {
-    routes: {},
-    stops: {},
-    vehicles: {}
-  },
-
-  intervals: {},
-
-  ensureJsonParsed(json) {
-    const ref = typeof json;
-    if (ref === String || ref === 'string') {
-      return JSON.parse(json);
-    } else {
-      return json;
-    }
-  },
-
-  toQueryString(data) {
     const params = new URLSearchParams();
-    const add = (key, value) => {
-      if (value != null && typeof value === 'object' && !Array.isArray(value)) {
+    const add = (key: string, value: QuerySerializable[string]) => {
+      if (isNestedObject(value)) {
         for (const [nestedKey, nestedValue] of Object.entries(value)) {
           add(`${key}[${nestedKey}]`, nestedValue);
         }
-      } else if (value != null) {
-        params.append(key, value);
+      } else if (value !== undefined) {
+        params.append(key, value.toString());
       }
     };
-    for (const [key, value] of Object.entries(data)) {
+    for (const [key, value] of Object.entries(data ?? {})) {
       add(key, value);
     }
     return params.toString();
-  },
+  };
 
-  async fetchLocalJson(url) {
+  export async function fetchLocalJson(url: string): Promise<string> {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
     }
     return response.json();
-  },
+  };
 
-  iconUrls: {
+  export const iconUrls = {
     red: 'img/red_line.png',
     green: 'img/green_line.png',
     blue: 'img/blue_line.png',
@@ -96,67 +95,65 @@ const Helpers = {
     statusLoading: 'img/spinner.gif',
     statusSuccess: 'img/success.png',
     statusError: 'img/error.png'
-  },
+  };
 
   // these colors control the color of live train icons
   // and the color of line overlays
-  lineColors: {
+  export const lineColors = {
     red: '#ff0000',
     green: '#00bb00',
     blue: '#0077cc',
     orange: '#ff8800',
     silver: '#777777',
     bus: '#ffd700'
-  },
+  } as Record<LineColor, HexColor>;
 
-  getLineColor(lineColor) {
-    switch (lineColor) {
+  export function getLineColor(lineName: RouteId): HexColor {
+    switch (lineName) {
       case 'Green-B':
       case 'Green-C':
       case 'Green-D':
       case 'Green-E':
-        return Helpers.lineColors.green;
+        return lineColors.green;
       case 'Orange':
-        return Helpers.lineColors.orange;
+        return lineColors.orange;
       case 'Blue':
-        return Helpers.lineColors.blue;
+        return lineColors.blue;
       case 'Red':
       case 'Mattapan':
-        return Helpers.lineColors.red;
+        return lineColors.red;
       case '741':
       case '742':
       case '751':
       case '749':
       case '746':
-        return Helpers.lineColors.silver;
+        return lineColors.silver;
       default:
-        return Helpers.lineColors.bus;
+        return lineColors.bus;
     }
-  },
+  };
 
-  getLineIcon(lineColor) {
-    switch (lineColor) {
-      case 'Green Line':
+  export function getLineIcon(longName: MarkerCategory): string {
+    switch (longName) {
       case 'Green Line B':
       case 'Green Line C':
       case 'Green Line D':
       case 'Green Line E':
-        return Helpers.iconUrls.green;
+        return iconUrls.green;
       case 'Orange Line':
-        return Helpers.iconUrls.orange;
+        return iconUrls.orange;
       case 'Blue Line':
-        return Helpers.iconUrls.blue;
+        return iconUrls.blue;
       case 'Red Line':
-      case 'Mattapan Trolley':
-        return Helpers.iconUrls.red;
+        return iconUrls.red;
       case 'Location':
-        return Helpers.iconUrls.locationReticle;
+        return iconUrls.locationReticle;
       default:
-        return Helpers.iconUrls.yellow;
+        return iconUrls.yellow;
     }
-  },
+  };
 
-  getLiveIcon(train) {
+  export function getLiveIcon(train: LiveTrain) {
     return {
       path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
       fillColor: train.line.color,
@@ -165,25 +162,25 @@ const Helpers = {
       scale: 4,
       strokeWeight: 1
     };
-  },
+  };
 
-  getIcon(line) {
+  export function getIcon(line: MarkerCategory): google.maps.Icon {
     return {
       scaledSize: new google.maps.Size(24, 24),
       anchor: new google.maps.Point(12, 12),
-      url: Helpers.getLineIcon(line)
+      url: getLineIcon(line)
     };
-  },
+  };
 
-  dateToTime(date) {
-    const hours = (date.getHours() - 1) % 12 + 1;
-    const minutes = date.getMinutes().leftPad(2);
-    const amPm = (date.getHours() >= 12) ? 'pm' : 'am';
+  export function dateToTime(date: Date): string {
+    return date.toLocaleTimeString('en-us', {
+      hour: 'numeric',
+      hour12: true,
+      minute: '2-digit',
+    }).toLowerCase();
+  };
 
-    return `${hours}:${minutes} ${amPm}`;
-  },
-
-  secondsToTimeString(time) {
+  export function secondsToTimeString(time: number): string {
     const minutes = Math.floor(time / 60);
 
     if (minutes > 0) {
@@ -191,19 +188,15 @@ const Helpers = {
     } else {
       return 'Arr';
     }
-  },
+  };
 
-  vehicleName(modeName) {
-    const vehicleNameMap = {
-      'Rapid Transit': 'trains',
-      'Local Bus': 'buses',
-      'Commuter Rail': 'trains'
-    };
+  export const vehicleNameMap = {
+    'Rapid Transit': 'trains',
+    'Local Bus': 'buses',
+    'Commuter Rail': 'trains'
+  };
 
-    return vehicleNameMap[modeName];
-  },
-
-  mergePredictions(predictions) {
+  export function mergePredictions(predictions: MbtaResource<'Prediction'>[]) {
     const mergePair = (pair, subarrayExtractor, keyExtractor, mergeFunction) => {
       const newSet = {};
       for (const element of subarrayExtractor(pair[1])) {
@@ -221,10 +214,11 @@ const Helpers = {
       }
       return results;
     };
-    const mergePredictionPair = (prediction, secondPrediction) => {
+    const mergePredictionPair = (prediction: MbtaResource<'Prediction'>, secondPrediction: MbtaResource<'Prediction'>) => {
       const subarrExtractor = (prediction) => prediction.routes;
       const keyExtractor = (route) => route.self.name;
-      return Object.assign(prediction, {
+      return {
+        ...prediction,
         routes: mergePair([prediction, secondPrediction],
           subarrExtractor,
           keyExtractor,
@@ -252,7 +246,13 @@ const Helpers = {
         trips: dir.trips.concat(secondDir.trips).sort((a, b) => parseInt(b.pre_away) - parseInt(a.pre_away))
       };
     };
-    const newPredictions = {};
+    const newPredictions = predictions.reduce((acc, prediction) => {
+      const existingPrediction = acc[prediction.type]
+      return {
+        ...acc,
+        [prediction.type]: (acc[prediction.type]
+      };
+    }, {} as Record<string, MbtaResource<'Prediction'>>);
     for (const prediction of predictions) {
       if (!newPredictions[prediction.type]) {
         newPredictions[prediction.type] = prediction;
@@ -269,7 +269,7 @@ const Helpers = {
   }
 };
 
-class Template {
+export class Template<K> {
   static formats = {
     locales: "en-US",
     formats: {
@@ -287,21 +287,19 @@ class Template {
     }
   };
 
-  constructor(compiledTemplate) {
-    this._template = compiledTemplate;
-  }
+  constructor(private template: Handlebars.TemplateDelegate<K>) {}
 
-  static async load(name) {
+  static async load<K = any>(name: string): Promise<Template<K>> {
     const response = await fetch(`hb/${name}.hdbs`);
     if (!response.ok) {
       throw new Error(`Failed to load template ${name}: ${response.statusText}`);
     }
     const data = await response.text();
-    return new Template(Handlebars.compile(data));
+    return new Template(Handlebars.compile(data) as Handlebars.TemplateDelegate<K>);
   }
 
-  render(context) {
-    return this._template(context, {
+  render(context: K): string {
+    return this.template(context, {
       data: {
         intl: Template.formats
       }
@@ -309,16 +307,25 @@ class Template {
   }
 }
 
-class Marker {
-  constructor(lat, lng, category) {
-    this.lat = lat;
-    this.lng = lng;
-    this.category = category;
+abstract class Marker {
+  protected marker: google.maps.Marker | undefined;
+  public readonly title: string;
+
+  constructor(
+    public readonly lat: number,
+    public readonly lng: number,
+    public readonly category: MarkerCategory,
+    title?: string,
+  ) {
+    this.title = title ?? category;
   }
 
-  render = () => {
-    this.marker = Mapper.placeMarker(this);
+  public render(): asserts this is Rendered<typeof this> {
+    this.marker = Mapper.placeMarker(this.lat, this.lng, this.title, Helpers.getIcon(this.category));
+    this.postRender(this.marker);
   };
+
+  protected postRender(marker: google.maps.Marker): void {}
 
   destroy = () => {
     if (this.marker) {
@@ -329,56 +336,49 @@ class Marker {
   };
 }
 
-class LocationMarker extends Marker {
-  constructor(lat, lng) {
-    super(lat, lng, 'Location');
-    this.lat = lat;
-    this.lng = lng;
-    this.category = 'Location';
-  }
+type Rendered<K extends Marker> = K & { marker: google.maps.Marker };
 
-  render = () => {
-    this.marker = Mapper.placeMarker(this.lat, this.lng, this.category, Helpers.getIcon(this.category));
-  };
+export class LocationMarker extends Marker {
+  constructor(lat: number, lng: number) {
+    super(lat, lng, 'Location');
+  }
 }
 
-class Stop extends Marker {
-  constructor(id, name, lat, lng, category) {
-    super(lat, lng, category);
-    this.id = id;
-    this.name = name;
-    this.lat = lat;
-    this.lng = lng;
-    this.category = category;
+export class Stop extends Marker {
+  listener: google.maps.MapsEventListener | undefined;
 
-    Helpers.cache.stops[this.id] = this;
+  constructor(
+    public id: string,
+    public name: string,
+    lat: number,
+    lng: number,
+    category: MarkerCategory) {
+    super(lat, lng, category, name);
+    this.id = id;
+
+    cache.stops[this.id] = this;
   }
 
-  render = () => {
-    this.marker = Mapper.placeMarker(this.lat, this.lng, this.name, Helpers.getIcon(this.category));
-    if (!this.marker) {
-      console.log(this.marker);
-    }
-
-    this.listener = google.maps.event.addListener(this.marker, 'click', this.onClick);
+  protected override postRender() {
+    this.listener = google.maps.event.addListener(this.marker!, 'click', this.onClick);
   };
 
-  static fromRawApi(api) {
-    return Helpers.cache.stops[api.id] || new Stop(api.id, api.attributes.name, parseFloat(api.attributes.latitude), parseFloat(api.attributes.longitude), "Bus");
+  static fromRawApi(api: MbtaResource<'Stop'>) {
+    return cache.stops[api.id] || new Stop(api.id, api.attributes.name!, api.attributes.latitude!, api.attributes.longitude!, "Bus");
   }
 
-  static isMainStop(id, parentStation) {
+  static isMainStop(id: string, parentStation) {
     return Mapper.defaultStopIds.indexOf(id) !== -1 || parentStation.data !== null;
   }
 
   onClick = async () => {
-    Helpers.events.fire('stop-selected', this);
+    events.fire('stop-selected', this);
     const stopAndChildren = [this.id].concat(jsonData.stop_descendants[this.id] || []);
     try {
       const predictions = await Promise.all(stopAndChildren.map((stopId) => {
         return Mbta.getNextTrainsToStop({id: stopId});
       }));
-      const result = Helpers.mergePredictions(predictions.flat());
+      const result = mergePredictions(predictions.flat());
       if (!(result.length > 0)) {
         Helpers.events.fire('stop-fetchdata-error', this);
         console.warn(`No predictions found for stop ${result.stop_name} (ID ${result.stop_id})`);
@@ -392,81 +392,96 @@ class Stop extends Marker {
   };
 }
 
-class Vehicle extends Marker {
+export class Vehicle extends Marker {
   render = () => {
     this.marker = Mapper.placeVehicleMarker(this);
   };
 }
 
-class LiveTrain extends Vehicle {
-  constructor(id, line, destination, lat, lng, bearing) {
-    super(parseFloat(lat), parseFloat(lng), line);
+export class LiveTrain extends Vehicle {
+  public bearing: number;
+
+  constructor(
+    public id: string,
+    public line: Route,
+    public destination: unknown,
+    lat: number,
+    lng: number,
+    bearing: number,
+  ) {
+    super(lat, lng, line);
     this.id = id;
     this.line = line;
     this.destination = destination;
-    this.bearing = parseInt(bearing);
+    this.bearing = bearing;
 
-    Helpers.cache.vehicles[this.id] = this;
+    cache.vehicles[this.id] = this;
   }
 }
 
-class Alert {
-  constructor(text) {
-    this.text = text;
+export class Alert {
+  public timestamp: Date;
+
+  constructor(private text: string) {
     this.timestamp = new Date();
   }
 
-  matches(text) {
+  matches(text: string) {
     return this.text === text;
   }
 
-  equals(thing) {
-    return this === thing || this.matches(thing);
+  equals(thing: unknown) {
+    return this === thing || (typeof thing === "string" && this.matches(thing));
   }
 }
 
-class Route {
-  constructor(id, name, mode, stops, vehicles) {
-    this.id = id;
-    this.name = name;
-    this.mode = mode;
-    this.stops = stops;
-    this.vehicles = vehicles;
-    this.color = Helpers.getLineColor(this.id);
-    if (this.stops == null) {
-      this.stops = [];
-    }
-    if (this.vehicles == null) {
-      this.vehicles = [];
-    }
+export class Route {
+  private color: HexColor;
+  private stops: Stop[];
+  private vehicles: Vehicle[];
+  private paths: google.maps.Polyline[] | undefined;
 
-    Helpers.cache.routes[this.id] = this;
+  constructor(
+    public id: RouteId,
+    private name: string,
+    private mode: string,
+    stops?: Stop[],
+    vehicles?: Vehicle[],
+  ) {
+    this.color = getLineColor(this.id);
+    this.stops = stops ?? [];
+    this.vehicles = vehicles ?? [];
+
+    cache.routes[this.id] = this;
   }
 
-  setVehicles(vehicles) {
+  setVehicles(vehicles: Vehicle[]) {
     Mapper.featureManager.addFeature(`live-vehicles-${this.id}`, vehicles);
     this.vehicles = vehicles;
   }
 
-  static async byId(id) {
-    if (Helpers.cache.routes[id]) {
-      return Helpers.cache.routes[id];
+  static async byId(id: string) {
+    if (cache.routes[id]) {
+      return cache.routes[id];
     }
     const result = await Mbta.getRoute(id);
     return Route.fromRawApi(result);
   }
 
-  static fromRawApi(api) {
+  static fromRawApi(api: MbtaResponse<'Route'>) {
     const route = api.data;
-    if (Helpers.cache.routes[route.id] == null) {
-      Helpers.cache.routes[route.id] = new Route(route.id, route.attributes.name, "Subway");
+    if (cache.routes[route.id] == null) {
+      cache.routes[route.id] = new Route(route.id as RouteId, route.attributes.short_name!, "Subway");
     }
-    return Helpers.cache.routes[route.id];
+    return cache.routes[route.id];
   }
 
-  static async getShapes(id) {
-    const shapeSet = await Promise.all(jsonData.shapes_by_route[id].map((shapeId) => {
-      return Helpers.fetchLocalJson(`shapes/routes/${shapeId}.json`);
+  static async getShapes(id: RouteId): Promise<LatLng[][]> {
+    if (!hasKey(shapes_by_route, id)) {
+      return [];
+    }
+    const shapeSet = await Promise.all(shapes_by_route[id].map((shapeId) => {
+      return Helpers.fetchLocalJson(`shapes/routes/${shapeId}.json`) as Promise<ShapePoint[]>;
     }));
     return shapeSet.map((latLons) => {
       return latLons.map((point) => {
@@ -475,7 +490,7 @@ class Route {
     });
   }
 
-  async render(renderStops) {
+  async render(renderStops: boolean): Promise<void> {
     const shapes = await Route.getShapes(this.id);
     if (this.paths == null) {
       this.paths = shapes.map((shape) => {
@@ -496,7 +511,7 @@ class Route {
 
   destroy() {
     this.paths?.map((path) => path.setMap(null));
-    this.paths = null;
+    this.paths = undefined;
     this.stops.map((stop) => stop.destroy());
   }
 
@@ -505,18 +520,9 @@ class Route {
   }
 }
 
-window.Helpers = Helpers;
-window.Template = Template;
-window.Marker = Marker;
-window.LocationMarker = LocationMarker;
-window.Stop = Stop;
-window.Vehicle = Vehicle;
-window.LiveTrain = LiveTrain;
-window.Alert = Alert;
-window.Route = Route;
+export default Helpers;
 
-window.templates = {};
-window.jsonData = {};
+const templates = {};
 
 // load templates and JSON before initializing map
 $(async () => {
@@ -528,7 +534,7 @@ $(async () => {
         minute: "numeric"
       });
     });
-    Handlebars.registerHelper('arriving', (date) => {
+    Handlebars.registerHelper('arriving', (date: number) => {
       const minutesAway = new Date(date - new Date()).getMinutes();
       if (minutesAway === 0) {
         return "Arriving";
@@ -547,7 +553,7 @@ $(async () => {
   };
 
   const loadJson = async () => {
-    await Promise.all(['default_stops', 'google_style', 'routes', 'routes_by_line', 'shapes_by_route', 'stops', 'stop_descendants'].map(async (jsonName) => {
+    await Promise.all(['google_style', 'routes', 'routes_by_line', 'shapes_by_route', 'stops', 'stop_descendants'].map(async (jsonName) => {
       window.jsonData[jsonName] = await Helpers.fetchLocalJson(`js/json/${jsonName}.json`);
     }));
     Helpers.events.fire('json-loaded');

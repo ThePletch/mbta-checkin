@@ -1,3 +1,7 @@
+import { events, LiveTrain, Route, Stop, toQueryString } from '../lib/helpers';
+import { LatitudeLongitude, MbtaResource, MbtaResponse, RouteId, StopId } from '../lib/types/mbta';
+import type { QuerySerializable } from '../lib/types/util';
+
 const Mbta = {
   apiUrl: 'https://sm614m053d.execute-api.us-east-1.amazonaws.com/Prod/cached_api/',
   userLocMarker: null,
@@ -6,26 +10,12 @@ const Mbta = {
   routeIdsToAutoUpdate: ["741", "742", "746", "749", "751", "Green-B", "Green-C", "Green-D", "Green-E", "Red", "Blue", "Orange"],
   routeAutoUpdateIntervalSeconds: 90,
 
-  async makeApiRequest(path, additionalParams, triggerStatusEvents) {
-    const params = {};
-
-    if (additionalParams == null) {
-      additionalParams = {};
-    }
-    if (triggerStatusEvents == null) {
-      triggerStatusEvents = true;
+  async makeApiRequest<Response = any>(path: string, params?: QuerySerializable, triggerStatusEvents?: boolean): Promise<Response> {
+    if (triggerStatusEvents ?? false) {
+      events.fire('mbta-api-sent');
     }
 
-    for (const key in additionalParams) {
-      const val = additionalParams[key];
-      params[key] = val;
-    }
-
-    if (triggerStatusEvents) {
-      Helpers.events.fire('mbta-api-sent');
-    }
-
-    const query = Helpers.toQueryString(params);
+    const query = toQueryString(params);
     const url = query ? `${Mbta.apiUrl}${path}?${query}` : `${Mbta.apiUrl}${path}`;
 
     try {
@@ -33,50 +23,51 @@ const Mbta = {
       if (!response.ok) {
         throw new Error(response.statusText);
       }
-      const data = await response.json();
+      const data = await response.json() as Response;
       if (triggerStatusEvents) {
-        Helpers.events.fire('mbta-api-completed', data);
+        events.fire('mbta-api-completed', data);
       }
       return data;
     } catch (thrown) {
       if (triggerStatusEvents) {
-        Helpers.events.fire('mbta-api-error', thrown);
+        events.fire('mbta-api-error', thrown);
       }
       throw thrown;
     }
   },
 
-  initialize() {},
-
-  getStopsByLocation(lat, lon) {
-    return Mbta.makeApiRequest('stops', {filter: {latitude: lat, longitude: lon}});
+  getStopsByLocation(latitude: number, longitude: number): Promise<MbtaResponse<'Stops'>> {
+    return Mbta.makeApiRequest<MbtaResponse<'Stops'>>('stops', {filter: {latitude, longitude}});
   },
 
-  async getNearbyStops(coords) {
+  async getNearbyStops(coords: LatitudeLongitude) {
     const result = await Mbta.getStopsByLocation(coords.latitude, coords.longitude);
     return result.data.filter((stop) => {
-      return !Stop.isMainStop(stop.id, stop.relationships.parent_station);
+      return !Stop.isMainStop(stop.id, stop.relationships?.parent_station);
     }).map((stop) => {
       return Stop.fromRawApi(stop);
     });
   },
 
-  getRoute(routeId) {
+  getRoute(routeId: RouteId): Promise<MbtaResponse<'Routes'>> {
     return Mbta.makeApiRequest('routes/' + routeId, {});
   },
 
-  getRoutesByStop(stop) {
+  getRoutesByStop(stop: Stop): Promise<MbtaResponse<'Routes'>> {
     return Mbta.makeApiRequest('routes', {filter: {stop: stop.id}});
   },
 
-  getStopsByRoute(route) {
+  getStopsByRoute(route: Route): Promise<MbtaResponse<'Stops'>> {
     return Mbta.makeApiRequest('stops', {filter: {route: route.id}});
   },
 
-  async getTrainsByRoute(route) {
+  async getTrainsByRoute(route: Route) {
     // don't trigger a status indicator update for this call
-    const routeInfo = await Mbta.makeApiRequest('vehicles', {filter: {route: route.id}, include: 'trip'}, false);
-    return routeInfo.data.map((trainData) => {
+    const routeInfo = await Mbta.makeApiRequest<MbtaResponse<'Vehicles'>>('vehicles', {filter: {route: route.id}, include: 'trip'}, false);
+    return routeInfo.data.filter(
+      (trainData) => {
+        return (['latitude', 'longitude', 'bearing'] as const).every((attribute) => trainData.attributes[attribute] !== undefined);
+      }).map((trainData) => {
       const trip = routeInfo.included.find((item) => item.id === trainData.relationships.trip.data.id);
       const train = trainData.attributes;
       let headsign = null;
@@ -91,40 +82,50 @@ const Mbta = {
       }
 
       return new LiveTrain(
-        train.label,
+        train.label ?? "Unknown",
         route,
         headsign,
-        train.latitude,
-        train.longitude,
-        train.bearing);
+        train.latitude!,
+        train.longitude!,
+        train.bearing!);
     });
   },
 
-  async getNextTrainsToStop(stop) {
+  async getNextTrainsToStop(stop: Stop) {
     // takes a route id and the 'included' segment from the api response and builds the route object
-    const routeInfoBlock = (id, inclusions) => {
-      const apiInfo = inclusions.find((item) => item.id === id);
+    const routeInfoBlock = (id: string, routes: MbtaResource<'Route'>[]) => {
+      const apiInfo = routes.find((item) => item.id === id);
+
+      if (apiInfo == undefined) {
+        throw new Error("Could not find requested route");
+      }
 
       return {
         name: [apiInfo.attributes.short_name, apiInfo.attributes.long_name].filter(Boolean).join(' - '),
-        vehicleName: Helpers.vehicleName(apiInfo.attributes.description),
+        vehicleName: vehicleNameMap[apiInfo.attributes.description],
         directions: {}
       };
     };
 
-    const routeDirectionName = (id, directionId, inclusions) => {
-      return inclusions.find((item) => item.id === id && item.type === 'route').attributes.direction_names[directionId];
+    const routeDirectionName = (id: string, directionIndex: number, routes: MbtaResource<'Route'>[]) => {
+      return routes.find((item) => item.id === id && item.type === 'route').attributes.direction_names![directionIndex];
     };
 
-    const result = await Mbta.makeApiRequest('predictions', {filter: {stop: stop.id}, include: 'route'});
+    const result = await Mbta.makeApiRequest<MbtaResponse<'Predictions'>>('predictions', {filter: {stop: stop.id}, include: 'route'});
     console.log(result);
     const resultsByRoute = {};
 
-    result.data.forEach((datum) => {
+    result.data.reduce((acc, prediction) => {
       // arrival time will be null for predictions at a terminus station, so we fall back to departure time
-      const prediction = new Date(datum.attributes.arrival_time || datum.attributes.departure_time);
-      const routeId = datum.relationships.route.data.id;
-      const directionId = datum.attributes.direction_id;
+      const predictionDate = new Date(datum.attributes.arrival_time ?? datum.attributes.departure_time ?? 0);
+      const routeId = prediction.relationships?.route?.data?.id;
+      if (routeId === undefined) {
+        console.error("Prediction didn't include requested route", prediction);
+        return acc;
+      }
+      const directionId = prediction.attributes.direction_id;
+
+      if 
 
       resultsByRoute[routeId] || (resultsByRoute[routeId] = routeInfoBlock(routeId, result.included));
       resultsByRoute[routeId].directions[directionId] || (resultsByRoute[routeId].directions[directionId] = {
@@ -133,7 +134,7 @@ const Mbta = {
       });
       resultsByRoute[routeId].directions[datum.attributes.direction_id].predictions.push(prediction);
     });
-    Helpers.events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: resultsByRoute});
+    events.fire('mbta-predictions-found', {stop_name: stop.name, predictions: resultsByRoute});
     return resultsByRoute;
   },
 
@@ -145,16 +146,16 @@ const Mbta = {
         Mapper.featureManager.addFeature('traced-route', route);
       }
     };
-    Helpers.events.fire('mbta-api-sent');
+    events.fire('mbta-api-sent');
 
     try {
       const trains = await Mbta.getTrainsByRoute(route);
       route.setVehicles(trains);
       renderRoute();
-      Helpers.events.fire('mbta-api-completed');
+      events.fire('mbta-api-completed');
     } catch (err) {
       console.warn(`Failed to fetch trains for route ${route.name}.`);
-      Helpers.events.fire('mbta-api-error', 'Could not fetch train locations.');
+      events.fire('mbta-api-error', 'Could not fetch train locations.');
     }
   }
 };

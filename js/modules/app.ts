@@ -1,14 +1,15 @@
+import { events } from '../lib/helpers';
 const App = {
   getUserLocation() {
     if (navigator.geolocation) {
-      Helpers.events.fire('native-api-sent');
+      events.fire('native-api-sent');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          Helpers.events.fire('native-api-completed');
-          Helpers.events.fire('app-location-found', pos.coords);
+          events.fire('native-api-completed');
+          events.fire('app-location-found', pos.coords);
         },
         (error) => {
-          Helpers.events.fire('native-api-error', (() => {
+          events.fire('native-api-error', (() => {
             switch (error.code) {
               case error.PERMISSION_DENIED:
                 return 'Denied request to geolocate user';
@@ -16,7 +17,7 @@ const App = {
                 return 'Could not detect user location';
               case error.TIMEOUT:
                 return 'Attempt to find user timed out';
-              case error.UNKNOWN_ERROR:
+              default:
                 return 'Unknown error in geolocation';
             }
           })());

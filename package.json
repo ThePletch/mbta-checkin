@@ -1,0 +1,21 @@
+{
+  "name": "mbta-checkin",
+  "version": "1.0.0",
+  "description": "MBTA web app to get a quick glimpse of train statuses",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server",
+    "tsc-check": "tsc --noEmit",
+    "generate:types": "node scripts/generate-mbta-types.mjs",
+    "generate:ids": "node scripts/generate-mbta-ids.mjs"
+  },
+  "devDependencies": {
+    "@types/google.maps": "^3.65.3",
+    "openapi-typescript": "^7.13.0",
+    "swagger2openapi": "^7.0.8",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.9"
+  }
+}
