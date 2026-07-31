@@ -1,2 +1,2 @@
-./compile_assets.bash
+#!/bin/sh
 python -m SimpleHTTPServer
