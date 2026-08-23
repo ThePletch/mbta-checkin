@@ -12,8 +12,9 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "types": ["google.maps"],
+    "types": ["google.maps", "jquery"],
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
   },
   "include": ["js/**/*"],
   "exclude": ["js/lib/vendor/**", "node_modules"]
