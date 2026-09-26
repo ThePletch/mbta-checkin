@@ -1,2 +1,4 @@
 #!/bin/sh
-python -m SimpleHTTPServer
+set -e
+cd "$(dirname "$0")"
+exec npx vite

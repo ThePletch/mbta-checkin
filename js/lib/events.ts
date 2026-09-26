@@ -10,7 +10,11 @@ type EventPayloads = {
   'stop-selected': [Stop];
   'stop-fetchdata-error': [Stop];
   'stop-fetchdata-success': [Stop];
+  'track-route': [string];
   'prep-complete': [];
+};
+export type EventsWithNoArgs = keyof {
+  [K in keyof EventPayloads as EventPayloads[K] extends [] ? K : never]: K;
 };
 const callbacks: {
   [K in keyof EventPayloads]?: ((...args: EventPayloads[K]) => void)[];
@@ -19,6 +23,7 @@ const callbacks: {
 export function fire<K extends keyof EventPayloads>(
   eventName: K,
   ...args: EventPayloads[K]): void {
+    console.log("firing event", eventName, args);
   callbacks[eventName]?.forEach((f) => f(...args));
 }
 

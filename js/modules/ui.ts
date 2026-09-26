@@ -1,9 +1,7 @@
-import { bind, fire } from "../lib/events";
-import { renderTemplate, TemplateArguments } from "../lib/templates";
-import { RouteId } from "../lib/types/mbta";
+import { bind, EventsWithNoArgs, fire } from "../lib/events";
+import { Predictions } from "../views/predictions";
 import { getUserLocation } from "./app";
-import { PredictionsByRouteAndDirection, updateVehicleLocations } from "./mbta";
-import { Route } from "./mbta/route";
+import { PredictionsByRouteAndDirection, Stop } from "./mbta/stop";
 
 type IndicatorStatus = 'loading' | 'error' | 'success';
 
@@ -30,9 +28,8 @@ function setStatus(status: IndicatorStatus, tooltip?: string) {
   $(statusIndicatorSelector).attr("title", tooltip || "");
 }
 
-export function renderPredictions(predictions: PredictionsByRouteAndDirection[]) {
-  console.log(predictions);
-  // displayModal("prediction-info", predictions);
+export function renderPredictions(stop: Stop, predictions: PredictionsByRouteAndDirection) {
+  displayModal(Predictions, { stop, predictions });
 }
 
 export function initializeUi() {
@@ -66,30 +63,49 @@ function bindToggles() {
   });
   $("[data-close]").on('click', function () {
     const target = $(this).attr("data-close")!;
+    const eventName = $(this).attr("data-close-event")!;
+    if (eventName != null) {
+      fire(eventName as EventsWithNoArgs);
+    }
     closeElement(target);
   });
 }
 
 function bindModalButtons() {
   $(".track-route").on('click', async function () {
-    const routeId = $(this).attr("data-route-id") as RouteId;
-    const route = await Route.byId(routeId);
-    await updateVehicleLocations(route);
+    const routeId = $(this).attr("data-route-id");
+    if (routeId == null) {
+      throw new Error("Clicked on a track-route button without a data-route-id attribute");
+    }
+    fire("track-route", routeId);
     closeElement("modal-info-wrapper");
     fire('modal-closed');
   });
 }
 
+let modalShowTimeout: ReturnType<typeof setTimeout> | undefined;
+
+function cancelPendingModalShow() {
+  if (modalShowTimeout == null) {
+    return;
+  }
+  clearTimeout(modalShowTimeout);
+  modalShowTimeout = undefined;
+}
+
 function closeElement(target: string) {
+  if (`#${target}` === modal.wrapperSelector) {
+    cancelPendingModalShow();
+  }
   $(`#${target}`).removeClass("visible");
 }
 
-async function displayModal<K extends keyof TemplateArguments>(templateName: K, dataObject: TemplateArguments[K]) {
+export async function displayModal<K>(template: (props: K) => JSX.Element, props: K) {
+  cancelPendingModalShow();
   $(modal.wrapperSelector).removeClass("visible");
-  setTimeout(async () => {
-    const templateMarkup = await renderTemplate(templateName, dataObject);
-
-    $(modal.selector).html(templateMarkup);
+  modalShowTimeout = setTimeout(async () => {
+    modalShowTimeout = undefined;
+    $(modal.selector).html(template(props).toString());
     $(modal.wrapperSelector).addClass("visible");
     bindModalButtons();
   }, modal.slideTransitionMs);

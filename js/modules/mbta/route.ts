@@ -1,84 +1,117 @@
-import { fetchLocalJson, getLineColor, HexColor } from "../../lib/helpers";
-import { LatLng, MbtaResponse, RouteId, ShapePoint } from "../../lib/types/mbta";
-import { hasKey } from "../../lib/types/util";
-import Mapper from '../mapper';
-import { getRoute } from "../mbta";
 import { Stop } from "./stop";
 import { Vehicle } from "./vehicle";
-import shapes_by_route from '../../json/shapes_by_route.json';
+import type { MbtaSchemas } from "../../lib/types/mbta-api";
+import { getIncluded, MbtaClient } from "../../lib/mbta-client";
+import withCache from "../../lib/local-cache";
+import { MapFeature, mappableRenderable } from "../../lib/map/map-feature";
+import { Renderable } from "../../lib/types/map";
 
-export class Route {
-  public color: HexColor;
-  public stops: Stop[];
-  public vehicles: Vehicle[];
-  public paths: google.maps.Polyline[] | undefined;
+const ROUTE_OPACITY = 1.0;
+
+export class Route extends MapFeature {
+  public id: string;
+  public name: string;
+  public color: string;
+  private stops?: Stop[];
+  private vehicles?: Vehicle[];
+  private paths: Renderable[] | undefined;
 
   constructor(
-    public id: RouteId,
-    public name: string,
-    public mode: string,
-    stops?: Stop[],
+    raw: MbtaSchemas['RouteResource'],
+    stops?: MbtaSchemas['StopResource'][],
     vehicles?: Vehicle[],
   ) {
-    this.color = getLineColor(this.id);
-    this.stops = stops ?? [];
-    this.vehicles = vehicles ?? [];
-  }
-
-  setVehicles(vehicles: Vehicle[]) {
-    Mapper().featureManager.addFeature(`live-vehicles-${this.id}`, vehicles);
+    super();
+    this.id = raw.id;
+    this.name = raw.attributes.short_name;
+    this.color = raw.attributes.color;
+    console.log(stops);
+    this.stops = stops?.map((stop) => Stop.fromRawApi(stop, this));
     this.vehicles = vehicles;
   }
 
-  static async byId(id: RouteId): Promise<Route> {
-    const result = await getRoute(id);
-    return Route.fromRawApi(result);
-  }
-
-  static fromRawApi(api: MbtaResponse<'Route'>): Route {
-    return new Route(api.data.id as RouteId, api.data.attributes.short_name!, "Subway");
-  }
-
-  static async getShapes(id: RouteId): Promise<LatLng[][]> {
-    if (!hasKey(shapes_by_route, id)) {
-      return [];
-    }
-    const shapeSet = await Promise.all(shapes_by_route[id].map((shapeId) => {
-      return fetchLocalJson(`shapes/routes/${shapeId}.json`).then(JSON.parse) as Promise<ShapePoint[]>;
+  static async byId(id: string): Promise<Route> {
+    const result = await withCache(`route:${id}`, () => 
+      MbtaClient.GET('/routes/{id}', {
+      params: {
+        path: { id },
+      }
     }));
-    return shapeSet.map((latLons) => {
-      return latLons.map((point) => {
-        return {lat: point.lat, lng: point.lon};
-      });
+
+    return new Route(result.data);
+  }
+
+  async getShapes(): Promise<google.maps.LatLng[][]> {
+    const shapes = await withCache(`route:${this.id}:shapes`, () => MbtaClient.GET('/shapes', {
+      params: {
+        query: {
+          'filter[route]': this.id
+        }
+      }
+    }));
+    return shapes.data.map((shape) => google.maps.geometry.encoding.decodePath(shape.attributes.polyline));
+  }
+
+  async getStops(): Promise<Stop[]> {
+    const stopsResponse = await withCache(
+      `route:${this.id}:stops`,
+      () => MbtaClient.GET('/stops', {params: {query: {"filter[route]": this.id}}})
+    );
+    console.log(stopsResponse.data);
+    this.stops = stopsResponse.data.map((stop) => Stop.fromRawApi(stop, this));
+    return this.stops;
+  }
+
+  async getVehicles(): Promise<Vehicle[]> {
+    const routeVehicles = await MbtaClient.GET('/vehicles', {
+      params: {
+        query: {
+          "filter[route]": this.id,
+          include: 'trip',
+        }
+      }
     });
+    const trips = routeVehicles.included != null
+      ? getIncluded(routeVehicles, 'trip')
+      : {};
+
+    this.vehicles = routeVehicles.data.flatMap((vehicle) => {
+      const { latitude, longitude, bearing } = vehicle.attributes;
+      if (latitude == null || longitude == null) {
+        return [];
+      }
+      const tripId = vehicle.relationships?.trip?.data?.id;
+      const trip = tripId != null ? trips[tripId] : undefined;
+
+      return [new Vehicle(
+        new google.maps.LatLng(latitude, longitude),
+        bearing ?? 0,
+        this,
+        trip,
+      )];
+    });
+    return this.vehicles;
   }
 
-  async render(renderStops?: boolean): Promise<void> {
-    const shapes = await Route.getShapes(this.id);
+  protected override async getRenderables(): Promise<Renderable[]> {
     if (this.paths == null) {
-      this.paths = shapes.map((shape) => {
-        return new google.maps.Polyline({
-          path: shape,
-          strokeColor: this.color,
-          strokeOpacity: this.opacity(),
+      const shapes = await this.getShapes();
+      this.paths = shapes.map((path) => {
+        return mappableRenderable(new google.maps.Polyline({
+          path,
+          strokeColor: `#${this.color}`,
+          strokeOpacity: ROUTE_OPACITY,
           strokeWeight: 5
-        });
+        }));
       });
     }
-    this.paths.map((path) => path.setMap(Mapper().map));
-
-    if (renderStops) {
-      this.stops.map((stop) => stop.render());
+    if (this.stops == null) {
+      this.stops = await this.getStops();
     }
-  }
 
-  destroy() {
-    this.paths?.map((path) => path.setMap(null));
-    this.paths = undefined;
-    this.stops.map((stop) => stop.destroy());
-  }
-
-  opacity() {
-    return 1.0;
+    return [
+      ...this.paths,
+      ...this.stops,
+    ];
   }
 }

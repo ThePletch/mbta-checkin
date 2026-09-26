@@ -4,7 +4,7 @@
   "description": "MBTA web app to get a quick glimpse of train statuses",
   "private": true,
   "scripts": {
-    "start": "python3 -m http.server",
+    "start": "vite",
     "tsc-check": "tsc --noEmit",
     "generate:types": "node scripts/generate-mbta-types.mjs",
     "generate:ids": "node scripts/generate-mbta-ids.mjs"
@@ -17,9 +17,12 @@
     "prettier": "^3.9.6",
     "swagger2openapi": "^7.0.8",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vite": "^7.3.6"
   },
   "dependencies": {
+    "@kitajs/html": "^4.2.13",
+    "@kitajs/ts-html-plugin": "^4.1.4",
     "handlebars": "^4.7.9",
     "lodash": "^4.18.1",
     "openapi-fetch": "^0.17.0",

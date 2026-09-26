@@ -7,26 +7,21 @@
         <meta name="author" content="Steve Pletcher">
         <title>MBTA Console - steve-pletcher.com</title>
         <!--External libraries-->
-        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk"></script>
+        <script>
+            (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+              key: "AIzaSyCPSvKuJk4ODCmMlk9RlJpe5bXHNm7anqk",
+              v: "weekly",
+              libraries: ['maps', 'geometry']
+              // Use the 'v' parameter to indicate the version to use (weekly, beta, alpha, etc.).
+              // Add other bootstrap parameters as needed, using camel case.
+            });
+        </script>
         <link href='https://fonts.googleapis.com/css?family=Raleway:300' rel='stylesheet' type='text/css'>
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
         <script src="js/lib/vendor/analytics.js"></script>
-        <script src="js/lib/vendor/handlebars-v2.0.0.js"></script>
-        <script src="js/lib/vendor/hammer.min.js"></script>
         <!--End external libraries-->
 
-        <!--Local data-->
-        <script src="js/lib/helpers.js"></script>
-        <!--End local data-->
-
-        <!--Modules-->
-        <script src="js/modules/app.js"></script>
-        <script src="js/modules/mapper.js"></script>
-        <script src="js/modules/mbta.js"></script>
-        <script src="js/modules/ui.js"></script>
-        <!--End modules-->
-
-        <script src="js/main.js"></script>
+        <script type="module" src="/js/main.ts"></script>
         <link rel="stylesheet" href="css/picnic.css" />
         <link rel="stylesheet" href="css/site.css" />
     </head>
@@ -50,21 +45,8 @@
                 <div class="ui-viewport" id="slide-pane">
                     <span id="larrow" class="larrow">&lt;</span>
                     <div class="ui-slider" id="ui-slider">
-                        <div class="about ui-element">
-                            <button data-toggle="about" class="disabled">About</button>
-                            <ul class="ui-dropdown" id="about">
-                                <li>
-                                    <a href="https://github.com/ThePletch">
-                                        <button class="success">By @ThePletch</button>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
                         <div class="user-location ui-element">
                             <button id="zoom-location">My Location</button>
-                        </div>
-                        <div class="alerts ui-element">
-                            <button id="alerts">Alerts</button>
                         </div>
                     </div>
                     <span id="rarrow" class="rarrow">&gt;</span>

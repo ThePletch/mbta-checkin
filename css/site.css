@@ -190,8 +190,140 @@ img:not([src]){
   text-align: center;
 }
 
-.prediction-well{
-  padding-left: 10px;
+.predictions {
+  padding: 10px 12px 16px 4px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.predictions-stop {
+  margin: 0 0 14px;
+}
+
+.predictions-stop h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+.predictions-stop-meta {
+  margin: 4px 0 0;
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+.predictions-route {
+  border-left: 4px solid #777;
+  margin: 0 0 14px;
+  padding: 2px 0 4px 10px;
+}
+
+.predictions-route-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.predictions-route-badge {
+  flex: 0 0 auto;
+  min-width: 1.7em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.predictions-route-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.predictions-route-title h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 300;
+}
+
+.predictions-direction {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.predictions-dest {
+  min-width: 0;
+}
+
+.predictions-headsign {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.predictions-secondary,
+.predictions-clock,
+.predictions-later,
+.predictions-empty,
+.predictions-stop-meta {
+  color: #9a9a9a;
+}
+
+.predictions-secondary {
+  font-size: 0.75rem;
+  margin-top: 1px;
+}
+
+.predictions-next {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.predictions-countdown {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.predictions-countdown.is-now {
+  color: #8cd48c;
+}
+
+.predictions-clock {
+  display: block;
+  font-size: 0.75rem;
+}
+
+.predictions-later {
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.predictions-pill {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.16);
+  vertical-align: middle;
+}
+
+.predictions .track-route {
+  float: none;
+  margin: 0 !important;
+  padding: 4px 8px;
+  height: auto;
+  width: auto;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* mobile styles */

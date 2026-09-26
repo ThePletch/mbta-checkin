@@ -12,9 +12,12 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "types": ["google.maps", "jquery"],
+    "types": ["google.maps", "jquery", "vite/client"],
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@kitajs/html",
+    "plugins": [{ "name": "@kitajs/ts-html-plugin" }]
   },
   "include": ["js/**/*"],
   "exclude": ["js/lib/vendor/**", "node_modules"]
