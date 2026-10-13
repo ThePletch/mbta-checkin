@@ -1,1 +1,16 @@
 gtfs/*
+node_modules/
+.env
+tmp/
+dist/
+
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+infrastructure/backends/*.tfvars
+infrastructure/vars/*.tfvars

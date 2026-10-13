@@ -1,0 +1,17 @@
+#!/bin/bash
+
+BACKEND=$1
+
+if [ -z "$BACKEND" ]; then
+  echo "Usage: $0 <backend>"
+  exit 1
+fi
+
+RELATIVE_BACKEND_FILE="$(dirname $0)/../backends/$BACKEND.tfvars"
+
+if ! realpath "$RELATIVE_BACKEND_FILE"; then
+  echo "Backend file not found: $RELATIVE_BACKEND_FILE"
+  exit 1
+fi
+
+terraform init -backend-config="$(realpath $RELATIVE_BACKEND_FILE)"

@@ -1,0 +1,12 @@
+on:
+  push:
+    branches: []
+jobs:
+  deploy-prod:
+    permissions:
+      id-token: write
+      contents: read
+    secrets: inherit
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
