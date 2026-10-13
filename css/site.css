@@ -164,7 +164,7 @@ img:not([src]){
   top: 0;
   width: 30%;
   right: -35%;
-  bottom: 280px;
+  bottom: 100px;
   margin-top: 5px;
   border-top-left-radius: 10px;
   border-bottom-left-radius: 10px;

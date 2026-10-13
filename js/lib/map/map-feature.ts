@@ -17,7 +17,6 @@ export function mappableRenderable(mappable: Mappable): Renderable {
 export abstract class MapFeature implements Renderable {
   public async render(map: google.maps.Map): Promise<void> {
     for (const renderable of await this.getRenderables()) {
-      console.log(this, renderable, map);
       renderable.render(map);
     }
     await this.postRender();

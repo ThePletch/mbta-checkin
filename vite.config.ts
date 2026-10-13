@@ -46,7 +46,7 @@ export default defineConfig(({ command, mode }) => {
     base: command === "build" ? publishBase() : "/",
     plugins: [copyUnbundledAssets()],
     server: {
-      port: 3000,
+      port: 3001,
       strictPort: true,
       host: "127.0.0.1",
       proxy: {

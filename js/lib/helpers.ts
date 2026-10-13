@@ -1,7 +1,6 @@
 import { Branded } from './types/util';
 
 export type HexColor = Branded<string, 'Hex'>;
-// export type IntervalEventId = Branded<number, 'Interval'>;
 
 export function ensureJsonParsed(json: string | object): object {
   if (typeof json === 'string') {

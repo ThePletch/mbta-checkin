@@ -25,7 +25,6 @@ export class Route extends MapFeature {
     this.id = raw.id;
     this.name = raw.attributes.short_name;
     this.color = raw.attributes.color;
-    console.log(stops);
     this.stops = stops?.map((stop) => Stop.fromRawApi(stop, this));
     this.vehicles = vehicles;
   }
@@ -57,7 +56,6 @@ export class Route extends MapFeature {
       `route:${this.id}:stops`,
       () => MbtaClient.GET('/stops', {params: {query: {"filter[route]": this.id}}})
     );
-    console.log(stopsResponse.data);
     this.stops = stopsResponse.data.map((stop) => Stop.fromRawApi(stop, this));
     return this.stops;
   }

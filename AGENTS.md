@@ -8,6 +8,8 @@ There is no backend to this service other than the MBTA API. Secrets cannot be s
 
 When interacting with the MBTA API, use the `MBTA_API_KEY` variable stored in `.env` to avoid rate limiting.
 
-## Static files
+## Patterns
 
-Files in `js/json` are static, and were generated programmatically by scripts. These scripts have been lost, and these files may be out of date. If you find records in those files that conflict with the MBTA API, the API's results are authoritative. Do not update the files unless the user requests it.
+### Events
+
+The events framework is defined in `lib/events.ts`. Use events for handling side effects of operations, such as updating the request status indicator in the UI's corner. Never use events to transmit data intended for direct display, such as vehicle predictions.

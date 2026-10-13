@@ -23,7 +23,6 @@ const callbacks: {
 export function fire<K extends keyof EventPayloads>(
   eventName: K,
   ...args: EventPayloads[K]): void {
-    console.log("firing event", eventName, args);
   callbacks[eventName]?.forEach((f) => f(...args));
 }
 
