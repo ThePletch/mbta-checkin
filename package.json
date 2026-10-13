@@ -24,7 +24,7 @@
   "dependencies": {
     "@kitajs/html": "^4.2.13",
     "@kitajs/ts-html-plugin": "^4.1.4",
-    "handlebars": "^4.7.9",
+    "handlebars": "^4.7.10",
     "lodash": "^4.18.1",
     "openapi-fetch": "^0.17.0",
     "openapi-typescript-fetch": "^2.2.1"
