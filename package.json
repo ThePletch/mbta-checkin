@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "start": "vite",
+    "build": "tsc --noEmit && vite build",
     "tsc-check": "tsc --noEmit",
     "generate:types": "node scripts/generate-mbta-types.mjs",
     "generate:ids": "node scripts/generate-mbta-ids.mjs"

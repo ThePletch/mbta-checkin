@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub environment to deploy.
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment to deploy.
+        required: true
+        type: choice
+        # manual deploys to prod will be limited to main by environment rules
+        options: [production, staging]
+
+concurrency:
+  group: deploy-s3
+  # s3 sync isn't atomic - avoid interrupting halfway through the sync
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      S3_PATH: ${{ vars.S3_PATH }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+    steps:
+      - name: Check deployment configuration
+        run: |
+          missing=0
+          if [ -z "$S3_BUCKET" ]; then
+            echo "Set S3_BUCKET on the ${{ inputs.environment }} environment." >&2
+            missing=1
+          fi
+          if [ -z "$S3_PATH" ]; then
+            echo 'Set S3_PATH on the ${{ inputs.environment }} environment. Use "/" to publish at the bucket root.' >&2
+            missing=1
+          fi
+          if [ -z "$AWS_REGION" ]; then
+            echo "Set AWS_REGION on the ${{ inputs.environment }} environment." >&2
+            missing=1
+          fi
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "Set AWS_ROLE_ARN on the ${{ inputs.environment }} environment." >&2
+            missing=1
+          fi
+          if [ -z "$VITE_GOOGLE_MAPS_API_KEY" ]; then
+            echo "Set GOOGLE_MAPS_API_KEY on the ${{ inputs.environment }} environment." >&2
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          DEPLOY_PATH: ${{ vars.S3_PATH }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Publish to S3
+        run: |
+          prefix="${S3_PATH#/}"
+          prefix="${prefix%/}"
+          if [ -n "$prefix" ]; then
+            dest="s3://${S3_BUCKET}/${prefix}"
+          else
+            dest="s3://${S3_BUCKET}"
+          fi
+
+          aws s3 sync dist/ "$dest" --delete \
+            --exclude "assets/*" \
+            --exclude "index.html" \
+            --cache-control "public,max-age=3600"
+          aws s3 sync dist/assets/ "${dest}/assets" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp dist/index.html "${dest}/index.html" \
+            --cache-control "no-cache" \
+            --content-type "text/html; charset=utf-8"

@@ -1,0 +1,6 @@
+aws_region          = "us-east-1"
+s3_bucket_name      = "your-bucket"
+s3_path_prefix      = "your-prefix"
+github_repository   = "your-org/your-repo"
+github_environments = ["production", "staging"]
+deploy_role_name    = "your-app-github-deploy"

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+ENVIRONMENT=$1
+COMMAND=${2:-plan}
+
+if [ -z "$ENVIRONMENT" ]; then
+  echo "Usage: $0 <environment>"
+  exit 1
+fi
+
+RELATIVE_ENVIRONMENT_FILE="$(dirname $0)/../vars/$ENVIRONMENT.tfvars"
+
+if ! realpath -q "$RELATIVE_ENVIRONMENT_FILE"; then
+  echo "Environment file not found: $RELATIVE_ENVIRONMENT_FILE"
+  exit 1
+fi
+
+terraform "$COMMAND" -var-file="$(realpath -q "$RELATIVE_ENVIRONMENT_FILE")"
