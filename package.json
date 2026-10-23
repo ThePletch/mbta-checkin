@@ -19,7 +19,7 @@
     "swagger2openapi": "^7.0.8",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
-    "vite": "^7.3.6"
+    "vite": "^7.3.7"
   },
   "dependencies": {
     "@kitajs/html": "^4.2.13",
