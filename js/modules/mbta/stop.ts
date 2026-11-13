@@ -3,7 +3,7 @@ import { fire } from "../../lib/events";
 import { MbtaSchemas } from "../../lib/types/mbta-api";
 import { getIncluded, MbtaClient } from "../../lib/mbta-client";
 import { renderPredictions } from "../ui";
-import withCache from "../../lib/local-cache";
+import withCache from "../../lib/cache/local-cache";
 import _ from "lodash";
 import { Route } from "./route";
 
@@ -64,13 +64,12 @@ export class Stop extends MapMarker {
     );
   }
 
-  static async fromRawApiWithPrimaryRoute(api: MbtaSchemas['StopResource']): Promise<Stop> {
-    const routesResponse = await fetchRoutesForStop(api.id);
-    const primaryRouteResource = primaryRoute(routesResponse.data);
-    return Stop.fromRawApi(
-      api,
-      primaryRouteResource != null ? new Route(primaryRouteResource) : undefined,
-    );
+  static fromRawApiWithRoutes(
+    api: MbtaSchemas['StopResource'],
+    routes: MbtaSchemas['RouteResource'][],
+  ): Stop {
+    const primary = primaryRoute(routes);
+    return Stop.fromRawApi(api, primary != null ? new Route(primary) : undefined);
   }
 
   protected override postRender() {
@@ -95,7 +94,7 @@ export class Stop extends MapMarker {
           query: {
             'filter[stop]': this.id,
             include: 'stop',
-          }
+          },
         },
       }),
       this.getRoutes(),
@@ -148,14 +147,18 @@ export class Stop extends MapMarker {
     try {
       const predictions = await this.getPredictions();
       if (Object.keys(predictions).length == 0) {
-        fire('stop-fetchdata-error', this);
+        fire('stop-fetchdata-error', new Error("No predictions found"), this);
         console.warn(`No predictions found for stop ${this.data.attributes.name} (ID ${this.id})`);
         return;
       }
       fire('stop-fetchdata-success', this);
       renderPredictions(this, predictions);
-    } catch (err) {
-      fire('stop-fetchdata-error', this);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        fire('stop-fetchdata-error', err, this);
+      } else {
+        fire('stop-fetchdata-error', new Error(String(err)), this);
+      }
     }
   };
 }

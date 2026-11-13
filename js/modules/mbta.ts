@@ -1,4 +1,5 @@
 import { Stop } from './mbta/stop';
+import { routePatternsByStop } from './mbta/route-pattern';
 import { MbtaClient } from '../lib/mbta-client';
 
 export const userLocMarker = null;
@@ -18,8 +19,16 @@ export function getStopsByLocation(coords: google.maps.LatLng) {
   });
 }
 
-export async function getNearbyStops(coords: google.maps.LatLng) {
+export async function getNearbyStops(coords: google.maps.LatLng): Promise<Stop[]> {
   const result = await getStopsByLocation(coords);
-  return Promise.all(result.data.map((stop) => Stop.fromRawApiWithPrimaryRoute(stop)));
+  const patternsByStop = await routePatternsByStop(result.data.map((stop) => stop.id));
+  return result.data.flatMap((stop) => {
+    const patterns = patternsByStop.get(stop.id) ?? [];
+    if (patterns.length === 0) {
+      return [];
+    }
+    const routes = patterns.flatMap((pattern) => pattern.route != null ? [pattern.route] : []);
+    return [Stop.fromRawApiWithRoutes(stop, routes)];
+  });
 }
 

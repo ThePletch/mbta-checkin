@@ -40,22 +40,35 @@ function withNoopCache<Result>(
   return fn();
 };
 
+export function readCached<K>(key: string): K | null {
+  if (!storageAvailable()) {
+    return null;
+  }
+  return getUnexpiredRecord<K>(key);
+}
+
+export function writeCached<K>(key: string, value: K): void {
+  if (!storageAvailable()) {
+    return;
+  }
+  try {
+    localStorage.setItem(fullKey(key), JSON.stringify({
+      expiresAt: Date.now() + TTL_MS,
+      value: JSON.stringify(value),
+    } satisfies CacheRecord));
+  } catch {
+    // local storage is probably full, silently skip the cache write
+    console.error("Failed to write cache record to local storage");
+  }
+}
+
 function withLocalStorageCache<Result>(
   key: string,
   fn: () => Promise<Result>,
 ): Promise<Result> {
-  return Promise.resolve(getUnexpiredRecord<Result>(key) ?? async function() {
+  return Promise.resolve(readCached<Result>(key) ?? async function() {
     const result = await fn();
-    try {
-      localStorage.setItem(fullKey(key), JSON.stringify({
-        expiresAt: Date.now() + TTL_MS,
-        value: JSON.stringify(result),
-      }));
-    } catch {
-      // local storage is probably full, silently skip the cache write
-      console.error("Failed to write cache record to local storage");
-    }
-
+    writeCached(key, result);
     return result;
   }());
 }

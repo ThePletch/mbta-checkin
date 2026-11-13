@@ -8,7 +8,7 @@ type EventPayloads = {
   'app-location-found': [google.maps.LatLng];
   'modal-closed': [];
   'stop-selected': [Stop];
-  'stop-fetchdata-error': [Stop];
+  'stop-fetchdata-error': [Error, Stop];
   'stop-fetchdata-success': [Stop];
   'track-route': [string];
   'prep-complete': [];

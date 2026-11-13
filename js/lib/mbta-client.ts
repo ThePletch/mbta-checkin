@@ -65,6 +65,11 @@ export function getIncluded<Thing extends keyof InclusionToResource>(
   },
   name: Thing,
 ): Record<string, InclusionToResource[Thing]> {
+  if (Array.isArray(resp.data) && resp.data.length === 0) {
+    // Empty list responses omit the included key entirely.
+    return {};
+  }
+
   if (resp.included === undefined) {
     throw new Error("Can't get inclusions from this response - no inclusions found.");
   }

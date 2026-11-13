@@ -68,9 +68,10 @@ class Mapper {
       this.selectionReticle?.setState("success");
     });
 
-    bind("stop-fetchdata-error", () => {
+    bind("stop-fetchdata-error", (error: Error) => {
       this.selectionReticle?.setState("error");
       this.enqueueSelectionEvent(2000, this.removeSelectionReticle.bind(this));
+      console.error(error);
     });
 
     bind("track-route", (routeId: string) => {
@@ -112,10 +113,10 @@ class Mapper {
       if (this.isDefaultRoute(route.id)) {
         await this.featureManager.destroyFeature("trackedRoute");
       } else {
-        await this.featureManager.addFeature("trackedRoute", route);
+        this.featureManager.addFeature("trackedRoute", route);
       }
       const vehicles = await route.getVehicles();
-      await this.featureManager.addFeature("trackedVehicles", vehicles);
+      this.featureManager.addFeature("trackedVehicles", vehicles);
       fire("api-call-completed");
     } catch (err) {
       console.error(err);
@@ -140,6 +141,7 @@ class Mapper {
       this.featureManager.addFeature("localStops", stops ?? []);
     } catch (err) {
       console.error(err);
+      throw err;
     }
   }
 

@@ -46,6 +46,7 @@ export function initializeUi() {
 
   bind("api-call-error", (error?: string) => {
     setStatus("error", error);
+    console.error(error);
   });
 }
 

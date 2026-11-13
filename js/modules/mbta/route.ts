@@ -2,7 +2,7 @@ import { Stop } from "./stop";
 import { Vehicle } from "./vehicle";
 import type { MbtaSchemas } from "../../lib/types/mbta-api";
 import { getIncluded, MbtaClient } from "../../lib/mbta-client";
-import withCache from "../../lib/local-cache";
+import withCache from "../../lib/cache/local-cache";
 import { MapFeature, mappableRenderable } from "../../lib/map/map-feature";
 import { Renderable } from "../../lib/types/map";
 
